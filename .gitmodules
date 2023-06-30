@@ -1,0 +1,15 @@
+[submodule "dependencies/other_cores/scr1"]
+	path = dependencies/other_cores/scr1
+	url = https://github.com/syntacore/scr1.git
+[submodule "dependencies/sw/riscv-tests"]
+	path = dependencies/sw/riscv-tests
+	url = https://github.com/riscv-software-src/riscv-tests.git
+[submodule "dependencies/sw/riscv-arch-test"]
+	path = dependencies/sw/riscv-arch-test
+	url = https://github.com/riscv-non-isa/riscv-arch-test.git
+[submodule "dependencies/sw/coremark"]
+	path = dependencies/sw/coremark
+	url = https://github.com/eembc/coremark.git
+[submodule "dependencies/sw/riscv-formal"]
+	path = dependencies/sw/riscv-formal
+	url = https://github.com/SymbioticEDA/riscv-formal
