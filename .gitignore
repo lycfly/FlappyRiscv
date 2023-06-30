@@ -1,0 +1,39 @@
+# 排除所有.开头的隐藏文件:
+.*
+.*/*
+*.class
+*.log
+*.bak
+/ptpx
+/syn
+/test
+/rtl_gen
+# sbt specific
+.cache
+.history
+dist/*
+/target/
+lib_managed/
+src_managed/
+/project/
+*.lst
+
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+
+.idea
+out
+
+# Eclipse
+bin/
+.classpath
+.project
+.settings
+.cache-main
+
+/simWorkspace/
+/tmp/
+
+!.gitignore
+!.gitmodules
