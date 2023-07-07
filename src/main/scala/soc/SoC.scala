@@ -1,26 +1,30 @@
 package soc
 
+import EasonLib.Bus.MemBus.{PipelineMemBus2Ahblite, PipelineMemBusRamMultiPort}
 import backbone._
+import example.createStaticPipeline
 import soc.devices._
-
 import spinal.core._
 import spinal.lib._
+import spinal.lib.bus.amba3.ahblite.{AhbLite3, AhbLite3Config, AhbLite3OnChipRamMultiPort}
 import spinal.lib.misc.HexTools
 import spinal.lib.bus.amba4.axi._
 import spinal.lib.bus.amba3.apb._
+import spinal.lib.bus.simple.PipelinedMemoryBusConfig
 
 sealed abstract class RamType(val size: BigInt)
 
 object RamType {
   case class OnChipRam(override val size: BigInt, initHexFile: Option[String]) extends RamType(size)
+
   case class ExternalAxi4(override val size: BigInt) extends RamType(size)
 }
 
 class SoC(
-    ramType: RamType,
-    createPipeline: Config => Pipeline,
-    extraDbusReadDelay: Int = 0
-) extends Component {
+           ramType: RamType,
+           createPipeline: Config => Pipeline,
+           extraDbusReadDelay: Int = 0
+         ) extends Component {
   setDefinitionName("Core")
 
   implicit val config = new Config(BaseIsa.RV32I)
@@ -151,4 +155,119 @@ class SoC(
       )
     )
   }
+}
+
+class SocAHB(
+      ramType: RamType,
+      createPipeline: Config => Pipeline,
+      extraDbusReadDelay: Int = 0
+    ) extends Component {
+  setDefinitionName("CoreAhb")
+  implicit val config = new Config(BaseIsa.RV32I)
+  val pipeline = createPipeline(config)
+
+  val memService = pipeline.service[MemoryService]
+  val ibus = memService.getExternalIBus
+  val dbus = memService.getExternalDBus
+//  val ramAhb = ramType match {
+//    case RamType.OnChipRam(size, initHexFile) => {
+//      val ram = AhbLite3OnChipRamMultiPort(portCount = 2, AhbLite3Config(32, config.xlen), size)
+//      initHexFile.foreach(HexTools.initRam(ram.ram, _, 0x00000000L))
+//      ram.io.ahbs
+//    }
+//    case _ => null
+//  }
+  val ibusMemBus = ibus.toPipeMemBus()
+  val dbusMemBus = dbus.toPipeMemBus()
+  val dmemdecoder = new DmemBusDecoder(32, config.xlen, DbusOutNum = 3)
+  val imemdecoder = new ImemBusDecoder(32, config.xlen, DbusOutNum = 2)
+  val TCM = new PipelineMemBusRamMultiPort(2, 32, config.xlen, 64 KiB)
+
+  val ibus2ahb = new PipelineMemBus2Ahblite(AhbLite3Config(32,config.xlen), PipelinedMemoryBusConfig(32,config.xlen))
+  val dbus2ahb = new PipelineMemBus2Ahblite(AhbLite3Config(32,config.xlen), PipelinedMemoryBusConfig(32,config.xlen))
+
+  imemdecoder.io.imem_bus_in <> ibusMemBus
+  dmemdecoder.io.dmem_bus_in <> dbusMemBus
+
+  ibus2ahb.io.pipelinedMemoryBus <> imemdecoder.io.imem_bus_out(0)
+  dbus2ahb.io.pipelinedMemoryBus <> dmemdecoder.io.dmem_bus_out(0)
+
+  TCM.io.pipeMemBus(0) <> imemdecoder.io.imem_bus_out(1)
+  TCM.io.pipeMemBus(1) <> dmemdecoder.io.dmem_bus_out(1)
+
+//  ramAhb(0) <> ibus2ahb.io.ahb.toAhbLite3()
+//  ramAhb(1) <> dbus2ahb.io.ahb.toAhbLite3()
+val io = new Bundle{
+  val ibusAhbMaster = master(AhbLite3(AhbLite3Config(32, config.xlen)))
+  val dbusAhbMaster = master(AhbLite3(AhbLite3Config(32, config.xlen)))
+}
+
+  val iahb = ibus2ahb.io.ahb
+  val dahb = dbus2ahb.io.ahb
+
+  io.ibusAhbMaster << iahb
+  io.dbusAhbMaster << dahb
+
+  dmemdecoder.io.dmem_bus_out(2).cmd.ready := False
+  dmemdecoder.io.dmem_bus_out(2).rsp.valid := False
+  dmemdecoder.io.dmem_bus_out(2).rsp.payload.assignDontCare()
+}
+
+
+object CoreAhb {
+  def main(args: Array[String]): Unit = {
+    //    SpinalVerilog(SoC.static(RamType.OnChipRam(10 MiB, args.headOption)))
+    SpinalConfig(
+      defaultConfigForClockDomains = ClockDomainConfig(resetKind = ASYNC,
+        clockEdge = RISING,
+        resetActiveLevel = LOW),
+      mode = Verilog,
+      oneFilePerComponent = false,
+      nameWhenByFile = false,
+      inlineConditionalExpression = true,
+      enumPrefixEnable = false,
+      anonymSignalPrefix = "tmp",
+      targetDirectory = "rtl_gen")
+//      .addStandardMemBlackboxing(blackboxAll)
+      .generate(new SocAHB(RamType.OnChipRam(1 MiB, args.headOption), config => createStaticPipeline()(config),0))
+  }
+  //  }.printPruned()
+}
+
+class ProteusCore(
+              createPipeline: Config => Pipeline
+            ) extends Component {
+  setDefinitionName("ProteusCore")
+  implicit val config = new Config(BaseIsa.RV32I)
+  val pipeline = createPipeline(config)
+
+  val memService = pipeline.service[MemoryService]
+  val ibus = memService.getExternalIBus
+  val dbus = memService.getExternalDBus
+
+  val io = new Bundle{
+    val ibus = master(new MemBus(config.ibusConfig, 0 bits)).setName("ibus")
+    val dbus = master(new MemBus(config.dbusConfig, 0 bits)).setName("dbus")
+  }
+  io.ibus <> ibus
+  io.dbus <> dbus
+}
+
+object ProteusCore_Inst {
+  def main(args: Array[String]): Unit = {
+    SpinalConfig(
+      defaultConfigForClockDomains = ClockDomainConfig(resetKind = ASYNC,
+        clockEdge = RISING,
+        resetActiveLevel = LOW),
+      mode = Verilog,
+      oneFilePerComponent = true,
+      nameWhenByFile = false,
+      inlineConditionalExpression = true,
+      enumPrefixEnable = false,
+      anonymSignalPrefix = "tmp",
+      targetDirectory = "rtl_gen")
+      //      .addStandardMemBlackboxing(blackboxAll)
+      .generate(new ProteusCore(config => createStaticPipeline()(config)))
+  }
+  //  }.printPruned()
 }

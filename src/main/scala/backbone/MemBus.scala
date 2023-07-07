@@ -4,6 +4,7 @@ import spinal.core._
 import spinal.lib._
 import spinal.lib.bus.amba3.apb._
 import spinal.lib.bus.amba4.axi._
+import spinal.lib.bus.simple.{PipelinedMemoryBus, PipelinedMemoryBusConfig}
 
 case class MemBusConfig(
     addressWidth: Int,
@@ -36,6 +37,31 @@ case class MemBus(val config: MemBusConfig, val idWidth: BitCount)
   override def asMaster(): Unit = {
     master(cmd)
     slave(rsp)
+  }
+  def toPipeMemBus(): PipelinedMemoryBus = {
+    assert(isMasterInterface)
+    val pipeMemBusConfig = MemBus.getPipeMemBusConfig(config)
+    val pipeMemBus = PipelinedMemoryBus(pipeMemBusConfig)
+    pipeMemBus.cmd.valid := cmd.valid
+    if(config.readWrite){
+      pipeMemBus.cmd.payload.write := cmd.payload.write
+      pipeMemBus.cmd.payload.mask := cmd.payload.wmask
+      pipeMemBus.cmd.payload.data := cmd.payload.wdata.asBits
+    } else {
+      pipeMemBus.cmd.payload.write := False
+      pipeMemBus.cmd.payload.mask := 0
+      pipeMemBus.cmd.payload.data := 0
+    }
+    pipeMemBus.cmd.payload.address := cmd.payload.address
+    cmd.ready := pipeMemBus.cmd.ready
+
+    rsp.valid := pipeMemBus.rsp.valid
+    rsp.payload.rdata := pipeMemBus.rsp.payload.data.asUInt
+    rsp.payload.id := 0
+
+//    cmd.payload.id.allowPruning()
+    rsp.ready.allowPruning()
+    pipeMemBus
   }
 
   // TODO: id implementation impossible with Apb3!
@@ -105,6 +131,11 @@ case class MemBus(val config: MemBusConfig, val idWidth: BitCount)
 }
 
 object MemBus {
+  def getPipeMemBusConfig(config: MemBusConfig) = PipelinedMemoryBusConfig(
+    addressWidth = config.addressWidth,
+    dataWidth = config.dataWidth
+  )
+
   def getApb3Config(config: MemBusConfig) = Apb3Config(
     addressWidth = config.addressWidth,
     dataWidth = config.dataWidth,
@@ -226,7 +257,7 @@ class MemBusControl(bus: MemBus)(implicit config: Config) extends Area {
       dropRsp := True
     }
 
-    when(bus.rsp.valid) {
+    when(bus.rsp.valid & !currentCmd.isWrite) {
       currentCmd.valid := False
       currentCmd.ready := False
 

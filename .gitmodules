@@ -13,3 +13,12 @@
 [submodule "dependencies/sw/riscv-formal"]
 	path = dependencies/sw/riscv-formal
 	url = https://github.com/SymbioticEDA/riscv-formal
+[submodule "Easonlib"]
+	path = Easonlib
+	url = https://github.com/lycfly/Easonlib.git
+[submodule "src/main/scala/Easonlib"]
+	path = src/main/scala/Easonlib
+	url = https://github.com/lycfly/Easonlib.git
+[submodule "src/main/scala/EasonLib"]
+	path = src/main/scala/EasonLib
+	url = https://github.com/lycfly/EasonLib.git

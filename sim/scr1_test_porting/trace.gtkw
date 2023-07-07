@@ -1,0 +1,137 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Fri Jul  7 09:18:54 2023
+[*]
+[dumpfile] "/home/lyc/projects/riscv/FlappyRiscv/sim/scr1_test_porting/build/verilator_wf_AHB_MYCORE_IM_IPIC_0_TCM_1_VIRQ_0_TRACE_1/simx.fst"
+[dumpfile_mtime] "Fri Jul  7 09:07:39 2023"
+[dumpfile_size] 34183994
+[savefile] "/home/lyc/projects/riscv/FlappyRiscv/sim/scr1_test_porting/trace.gtkw"
+[timestart] 1
+[size] 1860 1016
+[pos] -629 -144
+*-12.000000 2352 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] TOP.
+[treeopen] TOP.scr1_top_tb_ahb.
+[treeopen] TOP.scr1_top_tb_ahb.i_top.
+[treeopen] TOP.scr1_top_tb_ahb.i_top.i_core_top.
+[treeopen] TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.
+[treeopen] TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.
+[treeopen] TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.
+[sst_width] 374
+[signals_width] 469
+[sst_expanded] 1
+[sst_vpaned_height] 301
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.clk
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.resetn
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.dbus_cmd_payload_address[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.dbus_cmd_payload_wdata[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.dbus_cmd_payload_wmask[3:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.dbus_cmd_payload_write
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.dbus_cmd_ready
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.dbus_cmd_valid
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.dbus_rsp_payload_rdata[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.dbus_rsp_ready
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.dbus_rsp_valid
+@200
+-
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.ibus_cmd_payload_address[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.ibus_cmd_ready
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.ibus_cmd_valid
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.ibus_rsp_payload_rdata[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.ibus_rsp_ready
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.ibus_rsp_valid
+@200
+-
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.BranchTargetPredictor_predictionCount[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.BranchTargetPredictor_mispredictionCount[31:0]
+@200
+-Fetch
+@4022
+[color] 2
+^>1 /home/lyc/projects/riscv/FlappyRiscv/sim/scr1_test_porting/disas.py
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.out_IR[31:0]
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.out_NEXT_PC[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.out_PC[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.out_PREDICTED_PC[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.arbitration_isDone
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.arbitration_isReady
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.arbitration_isStalled
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.arbitration_isValid
+@200
+-Dec
+@4022
+[color] 2
+^>1 /home/lyc/projects/riscv/FlappyRiscv/sim/scr1_test_porting/disas.py
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.out_IR[31:0]
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.out_NEXT_PC[31:0]
+@23
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.out_PC[31:0]
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.out_PREDICTED_PC[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.arbitration_isDone
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.arbitration_isReady
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.arbitration_isStalled
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.arbitration_isValid
+@200
+-Exe
+@4022
+[color] 2
+^>1 /home/lyc/projects/riscv/FlappyRiscv/sim/scr1_test_porting/disas.py
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.execute.out_IR[31:0]
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.execute.out_NEXT_PC[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.execute.out_PC[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.execute.out_PREDICTED_PC[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.execute.arbitration_isDone
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.execute.arbitration_isReady
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.execute.arbitration_isStalled
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.execute.arbitration_isValid
+[color] 3
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.execute.BranchTargetPredictor_jumpIo_correctlyPredicted
+[color] 1
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.execute.BranchTargetPredictor_jumpIo_mispredicted
+@200
+-Mem
+@4022
+[color] 2
+^>1 /home/lyc/projects/riscv/FlappyRiscv/sim/scr1_test_porting/disas.py
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.memory.out_IR[31:0]
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.memory.out_NEXT_PC[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.memory.out_PC[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.memory.arbitration_isDone
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.memory.arbitration_isReady
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.memory.arbitration_isStalled
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.memory.arbitration_isValid
+@200
+-WriteBack
+@4022
+[color] 2
+^>1 /home/lyc/projects/riscv/FlappyRiscv/sim/scr1_test_porting/disas.py
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeback.out_IR[31:0]
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeback.out_NEXT_PC[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeback.out_PC[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeback.arbitration_isDone
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeback.arbitration_isReady
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeback.arbitration_isStalled
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeback.arbitration_isValid
+[pattern_trace] 1
+[pattern_trace] 0

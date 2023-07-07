@@ -142,7 +142,7 @@ class Lsu(addressStages: Set[Stage], loadStages: Seq[Stage], storeStage: Stage)
     decoder.configure { config =>
       config.addDefault(
         Map(
-          Data.LSU_OPERATION_TYPE -> LsuOperationType.NONE,
+          Data.LSU_OPERATION_TYPE -> LsuOperationType.LSUNONE,
           Data.LSU_IS_UNSIGNED -> False,
           Data.LSU_IS_EXTERNAL_OP -> False
         )
@@ -307,7 +307,8 @@ class Lsu(addressStages: Set[Stage], loadStages: Seq[Stage], storeStage: Stage)
 
         when(arbitration.isValid && !misaligned) {
           when(isActive) {
-            val busAddress = address & U(0xfffffffcL)
+//            val busAddress = address & U(0xfffffffcL)
+            val busAddress = address
             val valid = Bool()
             valid := False
             val wValue = UInt(config.xlen bits).getZero
@@ -330,7 +331,8 @@ class Lsu(addressStages: Set[Stage], loadStages: Seq[Stage], storeStage: Stage)
             switch(value(Data.LSU_ACCESS_WIDTH)) {
               is(LsuAccessWidth.H) {
                 val offset = (address(1) ## B"0000").asUInt
-                val hValue = wValue(offset, 16 bits)
+//                val hValue = wValue(offset, 16 bits)
+                val hValue = wValue(0, 16 bits)
 
                 when(value(Data.LSU_IS_UNSIGNED)) {
                   result := Utils.zeroExtend(hValue, config.xlen)
@@ -340,7 +342,8 @@ class Lsu(addressStages: Set[Stage], loadStages: Seq[Stage], storeStage: Stage)
               }
               is(LsuAccessWidth.B) {
                 val offset = (address(1 downto 0) ## B"000").asUInt
-                val bValue = wValue(offset, 8 bits)
+//                val bValue = wValue(offset, 8 bits)
+                val bValue = wValue(0, 8 bits)
 
                 when(value(Data.LSU_IS_UNSIGNED)) {
                   result := Utils.zeroExtend(bValue, config.xlen)
@@ -375,7 +378,8 @@ class Lsu(addressStages: Set[Stage], loadStages: Seq[Stage], storeStage: Stage)
       val operation = value(Data.LSU_OPERATION_TYPE)
       val accessWidth = value(Data.LSU_ACCESS_WIDTH)
       val address = value(Data.LSU_TARGET_ADDRESS)
-      val busAddress = address & U(0xfffffffcL)
+//      val busAddress = address & U(0xfffffffcL)
+      val busAddress = address
 
       val isActive = operation === LsuOperationType.STORE
 
@@ -400,30 +404,35 @@ class Lsu(addressStages: Set[Stage], loadStages: Seq[Stage], storeStage: Stage)
 
           switch(value(Data.LSU_ACCESS_WIDTH)) {
             is(LsuAccessWidth.H) {
-              val hValue = wValue(15 downto 0)
+              data := wValue
 
-              when(address(1)) {
-                data := hValue << 16
-              } otherwise {
-                data := hValue.resized
-              }
-            }
+//              val hValue = wValue(15 downto 0)
+//
+//              when(address(1)) {
+//                data := hValue << 16
+//              } otherwise {
+//                data := hValue.resized
+//              }
+//            }
             is(LsuAccessWidth.B) {
-              val bValue = wValue(7 downto 0)
+              data := wValue
+//              data := (bValue.asBits ## bValue.asBits ## bValue.asBits ## bValue.asBits).asUInt
 
-              switch(address(1 downto 0).asBits) {
-                is(B"00") {
-                  data := bValue.resized
-                }
-                is(B"01") {
-                  data := (bValue << 8).resized
-                }
-                is(B"10") {
-                  data := (bValue << 16).resized
-                }
-                is(B"11") {
-                  data := (bValue << 24).resized
-                }
+//              val bValue = wValue(7 downto 0)
+//
+//              switch(address(1 downto 0).asBits) {
+//                is(B"00") {
+//                  data := bValue.resized
+//                }
+//                is(B"01") {
+//                  data := (bValue << 8).resized
+//                }
+//                is(B"10") {
+//                  data := (bValue << 16).resized
+//                }
+//                is(B"11") {
+//                  data := (bValue << 24).resized
+//                }
               }
             }
           }

@@ -95,7 +95,7 @@ object InstructionFormat {
   * newElement(String) on the RegisterType object.
   */
 object RegisterType extends SpinalEnum {
-  val NONE, GPR = newElement()
+  val REGNONE, GPR = newElement()
 }
 
 /** The InstructionType is a combination of an InstructionFormat and a specification of the type of
@@ -122,7 +122,7 @@ object InstructionType {
       extends InstructionType(
         InstructionFormat.I,
         RegisterType.GPR,
-        RegisterType.NONE,
+        RegisterType.REGNONE,
         RegisterType.GPR
       )
   case object S
@@ -130,27 +130,27 @@ object InstructionType {
         InstructionFormat.S,
         RegisterType.GPR,
         RegisterType.GPR,
-        RegisterType.NONE
+        RegisterType.REGNONE
       )
   case object B
       extends InstructionType(
         InstructionFormat.B,
         RegisterType.GPR,
         RegisterType.GPR,
-        RegisterType.NONE
+        RegisterType.REGNONE
       )
   case object U
       extends InstructionType(
         InstructionFormat.U,
-        RegisterType.NONE,
-        RegisterType.NONE,
+        RegisterType.REGNONE,
+        RegisterType.REGNONE,
         RegisterType.GPR
       )
   case object J
       extends InstructionType(
         InstructionFormat.J,
-        RegisterType.NONE,
-        RegisterType.NONE,
+        RegisterType.REGNONE,
+        RegisterType.REGNONE,
         RegisterType.GPR
       )
 }

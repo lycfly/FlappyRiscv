@@ -6,7 +6,7 @@ import spinal.core._
 
 class Shifter(exeStages: Set[Stage]) extends Plugin[Pipeline] {
   object ShiftOp extends SpinalEnum {
-    val NONE, SLL, SRL, SRA = newElement()
+    val SHIFTNONE, SLL, SRL, SRA = newElement()
   }
 
   object Data {
@@ -19,7 +19,7 @@ class Shifter(exeStages: Set[Stage]) extends Plugin[Pipeline] {
     pipeline.service[DecoderService].configure { config =>
       config.addDefault(
         Map(
-          Data.SHIFT_OP -> ShiftOp.NONE
+          Data.SHIFT_OP -> ShiftOp.SHIFTNONE
         )
       )
 
@@ -64,13 +64,13 @@ class Shifter(exeStages: Set[Stage]) extends Plugin[Pipeline] {
         val op = value(Data.SHIFT_OP)
 
         val result = op.mux(
-          ShiftOp.NONE -> U(0),
+          ShiftOp.SHIFTNONE -> U(0),
           ShiftOp.SLL -> (src |<< shamt),
           ShiftOp.SRL -> (src |>> shamt),
           ShiftOp.SRA -> (src.asSInt >> shamt).asUInt
         )
 
-        when(arbitration.isValid && op =/= ShiftOp.NONE) {
+        when(arbitration.isValid && op =/= ShiftOp.SHIFTNONE) {
           arbitration.rs1Needed := True
           arbitration.rs2Needed := !useImm
           output(pipeline.data.RD_DATA) := result

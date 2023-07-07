@@ -77,7 +77,7 @@ class RiscvFormal(altops: Boolean = false) extends Plugin[Pipeline] with FormalS
         regType: PipelineData[SpinalEnumCraft[RegisterType.type]],
         data: PipelineData[UInt]
     ): UInt = {
-      (stage.output(regType) === RegisterType.NONE) ? U(0) | stage.output(data)
+      (stage.output(regType) === RegisterType.REGNONE) ? U(0) | stage.output(data)
     }
 
     val rvfiArea = pipeline plug new Area {
@@ -104,7 +104,7 @@ class RiscvFormal(altops: Boolean = false) extends Plugin[Pipeline] with FormalS
       currentRvfi.rs2_rdata := zeroIfNone(pipeline.data.RS2_TYPE, pipeline.data.RS2_DATA)
       // FIXME This will hide bugs that still write RD on traps
       currentRvfi.rd_addr :=
-        (currentRvfi.trap || stage.output(pipeline.data.RD_TYPE) === RegisterType.NONE) ?
+        (currentRvfi.trap || stage.output(pipeline.data.RD_TYPE) === RegisterType.REGNONE) ?
           U(0) | stage.output(pipeline.data.RD)
       currentRvfi.rd_wdata := (currentRvfi.rd_addr === 0) ?
         U(0) | stage.output(pipeline.data.RD_DATA)

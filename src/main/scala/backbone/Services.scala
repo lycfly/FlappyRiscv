@@ -133,7 +133,7 @@ trait IntAluService {
 }
 
 object LsuOperationType extends SpinalEnum {
-  val NONE, LOAD, STORE = newElement()
+  val LSUNONE, LOAD, STORE = newElement()
 }
 
 object LsuAccessWidth extends SpinalEnum {

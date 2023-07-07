@@ -1,0 +1,2 @@
+#/usr/bin/bash
+gtkwave build/verilator_wf_AHB_MYCORE_IM_IPIC_0_TCM_1_VIRQ_0_TRACE_1/simx.fst

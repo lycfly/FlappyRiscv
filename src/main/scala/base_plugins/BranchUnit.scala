@@ -6,7 +6,7 @@ import spinal.core._
 
 class BranchUnit(branchStages: Set[Stage]) extends Plugin[Pipeline] {
   object BranchCondition extends SpinalEnum {
-    val NONE, EQ, NE, LT, GE, LTU, GEU = newElement()
+    val BRANCH_NONE, EQ, NE, LT, GE, LTU, GEU = newElement()
   }
 
   object Data {
@@ -26,7 +26,7 @@ class BranchUnit(branchStages: Set[Stage]) extends Plugin[Pipeline] {
           Data.BU_IS_BRANCH -> False,
           Data.BU_WRITE_RET_ADDR_TO_RD -> False,
           Data.BU_IGNORE_TARGET_LSB -> False,
-          Data.BU_CONDITION -> BranchCondition.NONE
+          Data.BU_CONDITION -> BranchCondition.BRANCH_NONE
         )
       )
 
@@ -112,7 +112,7 @@ class BranchUnit(branchStages: Set[Stage]) extends Plugin[Pipeline] {
         val condition = value(Data.BU_CONDITION)
 
         val branchTaken = condition.mux(
-          BranchCondition.NONE -> True,
+          BranchCondition.BRANCH_NONE -> True,
           BranchCondition.EQ -> eq,
           BranchCondition.NE -> ne,
           BranchCondition.LT -> lt,
@@ -124,7 +124,7 @@ class BranchUnit(branchStages: Set[Stage]) extends Plugin[Pipeline] {
         val jumpService = pipeline.service[JumpService]
 
         when(arbitration.isValid && value(Data.BU_IS_BRANCH)) {
-          when(condition =/= BranchCondition.NONE) {
+          when(condition =/= BranchCondition.BRANCH_NONE) {
             arbitration.rs1Needed := True
             arbitration.rs2Needed := True
           }

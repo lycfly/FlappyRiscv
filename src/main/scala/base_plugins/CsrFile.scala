@@ -47,7 +47,7 @@ private class CsrComponent(implicit config: Config) extends Component {
 
 class CsrFile(csrStage: Stage, exeStage: Stage) extends Plugin[Pipeline] with CsrService {
   object CsrOp extends SpinalEnum {
-    val NONE, RW, RS, RC = newElement()
+    val CSRNONE, RW, RS, RC = newElement()
   }
 
   object Data {
@@ -96,7 +96,7 @@ class CsrFile(csrStage: Stage, exeStage: Stage) extends Plugin[Pipeline] with Cs
     decoder.configure { config =>
       config.addDefault(
         Map(
-          Data.CSR_OP -> CsrOp.NONE,
+          Data.CSR_OP -> CsrOp.CSRNONE,
           Data.CSR_USE_IMM -> False
         )
       )
@@ -202,7 +202,7 @@ class CsrFile(csrStage: Stage, exeStage: Stage) extends Plugin[Pipeline] with Cs
         output(pipeline.data.RD_DATA_VALID) := True
       }
 
-      when(arbitration.isValid && op =/= CsrOp.NONE) {
+      when(arbitration.isValid && op =/= CsrOp.CSRNONE) {
         switch(op) {
           is(CsrOp.RW) {
             when(!ignoreRead) {
@@ -244,7 +244,7 @@ class CsrFile(csrStage: Stage, exeStage: Stage) extends Plugin[Pipeline] with Cs
   }
 
   override def isCsrInstruction(bundle: Bundle with DynBundleAccess[PipelineData[Data]]): Bool = {
-    bundle.element(Data.CSR_OP.asInstanceOf[PipelineData[Data]]) =/= CsrOp.NONE
+    bundle.element(Data.CSR_OP.asInstanceOf[PipelineData[Data]]) =/= CsrOp.CSRNONE
   }
 
   override def csrWriteInCycle(): Bool = {

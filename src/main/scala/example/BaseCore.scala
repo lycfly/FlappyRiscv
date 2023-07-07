@@ -51,14 +51,15 @@ object createStaticPipeline {
         new Shifter(Set(pipeline.execute)),
         new Lsu(Set(pipeline.memory), Seq(pipeline.memory), pipeline.memory),
         new BranchUnit(Set(pipeline.execute)),
-        new PcManager(0x80000000L),
-        new BranchTargetPredictor(pipeline.fetch, pipeline.execute, 8, conf.xlen),
+        new PcManager(0x200L),
+//        new NoPredictionPredictor(pipeline.fetch, pipeline.execute),
+        new BranchTargetPredictor(pipeline.fetch, pipeline.execute, 128, conf.xlen),
         new CsrFile(pipeline.writeback, pipeline.writeback), // TODO: ugly
         new Timers,
         new MachineMode(pipeline.execute),
         new TrapHandler(pipeline.writeback),
         new TrapStageInvalidator,
-        new Interrupts(pipeline.writeback),
+//        new Interrupts(pipeline.writeback),
         new MulDiv(Set(pipeline.execute))
       ) ++ extraPlugins
     )
