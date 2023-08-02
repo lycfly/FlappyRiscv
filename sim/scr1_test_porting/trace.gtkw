@@ -1,15 +1,15 @@
 [*]
 [*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
-[*] Fri Jul  7 09:18:54 2023
+[*] Sun Jul  9 15:38:08 2023
 [*]
 [dumpfile] "/home/lyc/projects/riscv/FlappyRiscv/sim/scr1_test_porting/build/verilator_wf_AHB_MYCORE_IM_IPIC_0_TCM_1_VIRQ_0_TRACE_1/simx.fst"
 [dumpfile_mtime] "Fri Jul  7 09:07:39 2023"
 [dumpfile_size] 34183994
 [savefile] "/home/lyc/projects/riscv/FlappyRiscv/sim/scr1_test_porting/trace.gtkw"
-[timestart] 1
+[timestart] 625861
 [size] 1860 1016
-[pos] -629 -144
-*-12.000000 2352 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[pos] -89 -89
+*-4.000000 625902 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
 [treeopen] TOP.
 [treeopen] TOP.scr1_top_tb_ahb.
 [treeopen] TOP.scr1_top_tb_ahb.i_top.
@@ -17,10 +17,10 @@
 [treeopen] TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.
 [treeopen] TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.
 [treeopen] TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.
-[sst_width] 374
-[signals_width] 469
+[sst_width] 440
+[signals_width] 497
 [sst_expanded] 1
-[sst_vpaned_height] 301
+[sst_vpaned_height] 364
 @28
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.clk
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.resetn
@@ -51,16 +51,30 @@ TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.ibus_rsp_ready
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.ibus_rsp_valid
 @200
 -
-@22
+@24
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.BranchTargetPredictor_predictionCount[31:0]
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.BranchTargetPredictor_mispredictionCount[31:0]
 @200
 -Fetch
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.BranchTargetPredictor.predictIo_currentPc[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.BranchTargetPredictor.predictIo_predictedAddress_valid
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.BranchTargetPredictor.predictIo_predictedAddress_payload[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.PcManager_pcOverride_valid
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.PcManager_pcOverride_payload[31:0]
+[color] 7
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.PcManager_pc[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.in_PC[31:0]
 @4022
 [color] 2
 ^>1 /home/lyc/projects/riscv/FlappyRiscv/sim/scr1_test_porting/disas.py
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.out_IR[31:0]
 @22
+[color] 7
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.out_NEXT_PC[31:0]
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.out_PC[31:0]
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.out_PREDICTED_PC[31:0]
@@ -69,6 +83,46 @@ TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.a
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.arbitration_isReady
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.arbitration_isStalled
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.arbitration_isValid
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_restartAccepted
+@22
+[color] 7
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibus_cmd_payload_address[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibus_cmd_ready
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibus_cmd_valid
+@22
+[color] 7
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibus_rsp_payload_rdata[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibus_rsp_ready
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibus_rsp_valid
+@200
+-
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_cmdFifo_io_occupancy[1:0]
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_cmdFifo_io_pop_payload_address[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_cmdFifo_io_pop_ready
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_cmdFifo_io_pop_valid
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_cmdFifo_io_push_payload_address[31:0]
+@28
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_cmdFifo_io_push_ready
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_cmdFifo_io_push_valid
+@200
+-
+@23
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_rspFifo_io_push_payload_address[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_rspFifo_io_push_payload_ir[31:0]
+@29
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_rspFifo_io_push_ready
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_rspFifo_io_push_valid
+@23
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_rspFifo_io_pop_payload_address[31:0]
+@29
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_rspFifo_io_pop_ready
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.Fetcher_ibusCtrl_rspFifo_io_pop_valid
 @200
 -Dec
 @4022
@@ -77,9 +131,7 @@ TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.fetch.a
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.out_IR[31:0]
 @22
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.out_NEXT_PC[31:0]
-@23
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.out_PC[31:0]
-@22
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.out_PREDICTED_PC[31:0]
 @28
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.decode.arbitration_isDone
@@ -133,5 +185,40 @@ TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeba
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeback.arbitration_isReady
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeback.arbitration_isStalled
 TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.writeback.arbitration_isValid
+@200
+-
+@22
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x0_zero[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x1_ra[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x2_sp[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x3_gp[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x4_tp[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x5_t0[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x6_t1[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x7_t2[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x8_s0_fp[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x9_s1[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x10_a0[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x11_a1[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x12_a2[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x13_a3[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x14_a4[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x15_a5[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x16_a6[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x17_a7[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x18_s2[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x19_s3[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x20_s4[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x21_s5[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x22_s6[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x23_s7[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x24_s8[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x25_s9[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x26_s10[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x27_s11[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x28_t3[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x29_t4[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x30_t5[31:0]
+TOP.scr1_top_tb_ahb.i_top.i_core_top.i_pipe_top.U_PROTEUSCORE_0.pipeline.RegisterFileAccessor.x31_t6[31:0]
 [pattern_trace] 1
 [pattern_trace] 0
