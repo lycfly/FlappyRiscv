@@ -17,6 +17,8 @@ lib_managed/
 src_managed/
 /project/
 *.lst
+*.fst
+*.vcd
 build/
 # Scala-IDE specific
 .scala_dependencies
@@ -34,6 +36,7 @@ bin/
 
 /simWorkspace/
 /tmp/
+cocoTest/*/sim_build/
 
 !.gitignore
 !.gitmodules

@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.9.0    git head : 7d30dbacbd3aa1be42fb2a3d4da5675703aae2ae
 // Component : fetch_unit
-// Git hash  : c4e394917eecd64d736d33c42f22d53f0036c103
+// Git hash  : 19ab183b0375704520f39fb8e2ec4eed64088039
 
 `timescale 1ns/1ps
 
@@ -146,8 +146,11 @@ module fetch_unit (
   wire       [2:0]    pc_step_all_2;
   wire       [31:0]   real_instr_0;
   wire       [31:0]   real_instr_1;
-  wire                tmp_pc_step_all_1;
-  wire                tmp_pc_step_all_2;
+  wire       [2:0]    pc_step_0;
+  wire       [2:0]    pc_step_1;
+  wire                tmp_real_instr_0;
+  wire                tmp_real_instr_1;
+  wire                toplevel_addressFifo_io_pop_fire;
   `ifndef SYNTHESIS
   reg [55:0] tmp_2_string;
   reg [55:0] tmp_3_string;
@@ -767,14 +770,16 @@ module fetch_unit (
     end
   end
 
-  assign tmp_pc_step_all_1 = instrFifo_io_pop_0_payload[32];
+  assign tmp_real_instr_0 = instrFifo_io_pop_0_payload[32];
   assign rvcDecompressor_2_i = instrFifo_io_pop_0_payload[31 : 0];
-  assign real_instr_0 = ((tmp_pc_step_all_1 && (! rvcDecompressor_2_decompInstr_illegal)) ? rvcDecompressor_2_decompInstr_inst : instrFifo_io_pop_0_payload[31 : 0]);
-  assign pc_step_all_1 = (3'b000 + (tmp_pc_step_all_1 ? 3'b010 : 3'b100));
-  assign tmp_pc_step_all_2 = instrFifo_io_pop_1_payload[32];
+  assign real_instr_0 = ((tmp_real_instr_0 && (! rvcDecompressor_2_decompInstr_illegal)) ? rvcDecompressor_2_decompInstr_inst : instrFifo_io_pop_0_payload[31 : 0]);
+  assign pc_step_0 = (tmp_real_instr_0 ? 3'b010 : 3'b100);
+  assign pc_step_all_1 = (3'b000 + pc_step_0);
+  assign tmp_real_instr_1 = instrFifo_io_pop_1_payload[32];
   assign rvcDecompressor_3_i = instrFifo_io_pop_1_payload[31 : 0];
-  assign real_instr_1 = ((tmp_pc_step_all_2 && (! rvcDecompressor_3_decompInstr_illegal)) ? rvcDecompressor_3_decompInstr_inst : instrFifo_io_pop_1_payload[31 : 0]);
-  assign pc_step_all_2 = (pc_step_all_1 + (tmp_pc_step_all_2 ? 3'b010 : 3'b100));
+  assign real_instr_1 = ((tmp_real_instr_1 && (! rvcDecompressor_3_decompInstr_illegal)) ? rvcDecompressor_3_decompInstr_inst : instrFifo_io_pop_1_payload[31 : 0]);
+  assign pc_step_1 = (tmp_real_instr_1 ? 3'b010 : 3'b100);
+  assign pc_step_all_2 = (pc_step_all_1 + pc_step_1);
   always @(*) begin
     if2id_itf_0_instr_data = 32'h00000000;
     if(toplevel_instrFifo_io_pop_0_fire) begin
@@ -805,6 +810,7 @@ module fetch_unit (
   end
 
   assign if2id_itf_1_valid = toplevel_instrFifo_io_pop_1_fire;
+  assign toplevel_addressFifo_io_pop_fire = (addressFifo_io_pop_valid && addressFifo_io_pop_ready);
   always @(*) begin
     instrFifo_io_flush = 1'b0;
     if(fetchStage_flush) begin
@@ -850,8 +856,12 @@ module fetch_unit (
         tmp_1 <= 1'b1;
         tmp_instr_slices_0_payload <= ibus_rsp_payload_rdata[63 : 48];
       end
-      if(toplevel_instrFifo_io_pop_0_fire) begin
-        pc_pop_offset <= pc_step_all_2;
+      if(toplevel_addressFifo_io_pop_fire) begin
+        pc_pop_offset <= 3'b000;
+      end else begin
+        if(toplevel_instrFifo_io_pop_0_fire) begin
+          pc_pop_offset <= pc_step_all_2;
+        end
       end
     end
   end
@@ -1201,25 +1211,26 @@ module lzc (
   wire       [1:0]    stage_index1_1;
   wire       [1:0]    stage_index2_0;
   wire                empty;
+  reg        [1:0]    out_remap;
 
-  assign tmp_cnt_out = {1'd0, stage_index2_0};
+  assign tmp_cnt_out = {1'd0, out_remap};
   assign datain_reverse = {data_in[0],{data_in[1],{data_in[2],data_in[3]}}};
   always @(*) begin
     data_s = 4'b0000;
     if(mode) begin
       if(lead) begin
-        data_s = (~ datain_reverse);
-      end else begin
-        if(trail) begin
-          data_s = (~ data_in);
-        end
-      end
-    end else begin
-      if(lead) begin
         data_s = datain_reverse;
       end else begin
         if(trail) begin
           data_s = data_in;
+        end
+      end
+    end else begin
+      if(lead) begin
+        data_s = (~ datain_reverse);
+      end else begin
+        if(trail) begin
+          data_s = (~ data_in);
         end
       end
     end
@@ -1235,7 +1246,18 @@ module lzc (
   assign stage_index1_1 = (stage_node_0[2] ? 2'b10 : 2'b11);
   assign stage_index2_0 = (stage_node_1[0] ? stage_index1_0 : stage_index1_1);
   assign empty = ((lead || trail) ? (! (|data_s)) : 1'b0);
-  assign cnt_out = (empty ? 3'b100 : tmp_cnt_out);
+  always @(*) begin
+    out_remap = 2'b00;
+    if(lead) begin
+      out_remap = (2'b11 - stage_index2_0);
+    end else begin
+      if(trail) begin
+        out_remap = stage_index2_0;
+      end
+    end
+  end
+
+  assign cnt_out = ((lead && empty) ? 3'b100 : tmp_cnt_out);
 
 endmodule
 
@@ -1278,19 +1300,29 @@ module StreamFifo1delayMultiPort (
   wire       [3:0]    tmp_io_push_1_ready;
   wire       [3:0]    tmp_io_push_2_ready;
   wire       [3:0]    tmp_io_push_3_ready;
-  wire       [3:0]    tmp_when;
-  wire       [3:0]    tmp_when_1;
-  wire       [3:0]    tmp_when_2;
-  wire       [3:0]    tmp_when_3;
-  wire       [3:0]    tmp_when_4;
-  wire       [3:0]    tmp_when_5;
+  wire       [4:0]    tmp_pushPtrs_inc_0;
+  wire       [0:0]    tmp_pushPtrs_inc_0_1;
+  wire       [4:0]    tmp_pushPtrs_inc_1;
+  wire       [1:0]    tmp_pushPtrs_inc_1_1;
+  wire       [4:0]    tmp_pushPtrs_inc_2;
+  wire       [2:0]    tmp_pushPtrs_inc_2_1;
+  wire       [4:0]    tmp_pushPtrs_inc_3;
+  wire       [2:0]    tmp_pushPtrs_inc_3_1;
+  wire       [4:0]    tmp_popPtrs_inc_0;
+  wire       [0:0]    tmp_popPtrs_inc_0_1;
+  wire       [4:0]    tmp_popPtrs_inc_1;
+  wire       [1:0]    tmp_popPtrs_inc_1_1;
   reg        [32:0]   tmp_readedVec_0;
   wire       [3:0]    tmp_readedVec_0_1;
   reg        [32:0]   tmp_readedVec_1;
   wire       [3:0]    tmp_readedVec_1_1;
-  wire       [2:0]    tmp_when_6;
-  wire       [3:0]    tmp_pushPtrGlobalInc;
-  wire       [3:0]    tmp_popPtrGlobalInc;
+  wire       [2:0]    tmp_when;
+  wire       [4:0]    tmp_pushPtrGlobalInc;
+  wire       [3:0]    tmp_pushPtrGlobalInc_1;
+  wire       [4:0]    tmp_popPtrGlobalInc;
+  wire       [2:0]    tmp_popPtrGlobalInc_1;
+  wire       [4:0]    tmp_pushPtrGlobal;
+  wire       [4:0]    tmp_popPtrGlobal;
   wire       [3:0]    tmp_io_occupancy;
   reg        [32:0]   vec_0;
   reg        [32:0]   vec_1;
@@ -1304,6 +1336,8 @@ module StreamFifo1delayMultiPort (
   reg        [32:0]   vec_9;
   reg        [32:0]   vec_10;
   reg        [32:0]   vec_11;
+  reg        [32:0]   vec_12;
+  reg        [32:0]   vec_13;
   reg        [3:0]    pushPtrGlobal;
   reg        [3:0]    popPtrGlobal;
   wire                ptrMatch;
@@ -1320,20 +1354,26 @@ module StreamFifo1delayMultiPort (
   wire       [2:0]    inc_num;
   wire                tmp_dec_num;
   wire       [1:0]    dec_num;
-  reg        [3:0]    pushPtrs_0;
-  reg        [3:0]    pushPtrs_1;
-  reg        [3:0]    pushPtrs_2;
-  reg        [3:0]    pushPtrs_3;
-  reg        [3:0]    popPtrs_0;
-  reg        [3:0]    popPtrs_1;
+  reg        [4:0]    pushPtrs_0;
+  reg        [4:0]    pushPtrs_1;
+  reg        [4:0]    pushPtrs_2;
+  reg        [4:0]    pushPtrs_3;
+  reg        [4:0]    popPtrs_0;
+  reg        [4:0]    popPtrs_1;
+  wire       [4:0]    pushPtrs_inc_0;
+  wire       [4:0]    pushPtrs_inc_1;
+  wire       [4:0]    pushPtrs_inc_2;
+  wire       [4:0]    pushPtrs_inc_3;
+  wire       [4:0]    popPtrs_inc_0;
+  wire       [4:0]    popPtrs_inc_1;
   wire       [32:0]   readedVec_0;
   wire       [32:0]   readedVec_1;
   wire       [15:0]   tmp_1;
   wire       [15:0]   tmp_2;
   wire       [15:0]   tmp_3;
   wire       [15:0]   tmp_4;
-  wire       [3:0]    pushPtrGlobalInc;
-  wire       [3:0]    popPtrGlobalInc;
+  wire       [4:0]    pushPtrGlobalInc;
+  wire       [4:0]    popPtrGlobalInc;
   wire       [3:0]    ptrDif;
 
   assign tmp_inc_num_1 = ({1'b0,(pushing_vec_0 == tmp_inc_num)} + tmp_inc_num_2);
@@ -1345,22 +1385,32 @@ module StreamFifo1delayMultiPort (
   assign tmp_inc_num_6 = {1'd0, tmp_inc_num_7};
   assign tmp_dec_num_2 = (popping_vec_1 == tmp_dec_num);
   assign tmp_dec_num_1 = {1'd0, tmp_dec_num_2};
-  assign tmp_io_push_0_ready = (4'b1100 - io_occupancy);
-  assign tmp_io_push_1_ready = (4'b1100 - io_occupancy);
-  assign tmp_io_push_2_ready = (4'b1100 - io_occupancy);
-  assign tmp_io_push_3_ready = (4'b1100 - io_occupancy);
-  assign tmp_when = (pushPtrGlobal + 4'b0000);
-  assign tmp_when_1 = (pushPtrGlobal + 4'b0001);
-  assign tmp_when_2 = (pushPtrGlobal + 4'b0010);
-  assign tmp_when_3 = (pushPtrGlobal + 4'b0011);
-  assign tmp_when_4 = (popPtrGlobal + 4'b0000);
-  assign tmp_when_5 = (popPtrGlobal + 4'b0001);
-  assign tmp_readedVec_0_1 = (popPtrs_0 + 4'b0000);
-  assign tmp_readedVec_1_1 = (popPtrs_1 + 4'b0001);
-  assign tmp_when_6 = {1'd0, dec_num};
-  assign tmp_pushPtrGlobalInc = {1'd0, inc_num};
-  assign tmp_popPtrGlobalInc = {2'd0, dec_num};
-  assign tmp_io_occupancy = (4'b1100 + ptrDif);
+  assign tmp_io_push_0_ready = (4'b1110 - io_occupancy);
+  assign tmp_io_push_1_ready = (4'b1110 - io_occupancy);
+  assign tmp_io_push_2_ready = (4'b1110 - io_occupancy);
+  assign tmp_io_push_3_ready = (4'b1110 - io_occupancy);
+  assign tmp_pushPtrs_inc_0_1 = 1'b0;
+  assign tmp_pushPtrs_inc_0 = {4'd0, tmp_pushPtrs_inc_0_1};
+  assign tmp_pushPtrs_inc_1_1 = {1'b0,1'b1};
+  assign tmp_pushPtrs_inc_1 = {3'd0, tmp_pushPtrs_inc_1_1};
+  assign tmp_pushPtrs_inc_2_1 = {1'b0,2'b10};
+  assign tmp_pushPtrs_inc_2 = {2'd0, tmp_pushPtrs_inc_2_1};
+  assign tmp_pushPtrs_inc_3_1 = {1'b0,2'b11};
+  assign tmp_pushPtrs_inc_3 = {2'd0, tmp_pushPtrs_inc_3_1};
+  assign tmp_popPtrs_inc_0_1 = 1'b0;
+  assign tmp_popPtrs_inc_0 = {4'd0, tmp_popPtrs_inc_0_1};
+  assign tmp_popPtrs_inc_1_1 = {1'b0,1'b1};
+  assign tmp_popPtrs_inc_1 = {3'd0, tmp_popPtrs_inc_1_1};
+  assign tmp_when = {1'd0, dec_num};
+  assign tmp_pushPtrGlobalInc_1 = {1'b0,inc_num};
+  assign tmp_pushPtrGlobalInc = {1'd0, tmp_pushPtrGlobalInc_1};
+  assign tmp_popPtrGlobalInc_1 = {1'b0,dec_num};
+  assign tmp_popPtrGlobalInc = {2'd0, tmp_popPtrGlobalInc_1};
+  assign tmp_pushPtrGlobal = (pushPtrGlobalInc - 5'h0e);
+  assign tmp_popPtrGlobal = (popPtrGlobalInc - 5'h0e);
+  assign tmp_io_occupancy = (4'b1110 + ptrDif);
+  assign tmp_readedVec_0_1 = popPtrs_0[3 : 0];
+  assign tmp_readedVec_1_1 = popPtrs_1[3 : 0];
   always @(*) begin
     case(tmp_readedVec_0_1)
       4'b0000 : tmp_readedVec_0 = vec_0;
@@ -1374,7 +1424,9 @@ module StreamFifo1delayMultiPort (
       4'b1000 : tmp_readedVec_0 = vec_8;
       4'b1001 : tmp_readedVec_0 = vec_9;
       4'b1010 : tmp_readedVec_0 = vec_10;
-      default : tmp_readedVec_0 = vec_11;
+      4'b1011 : tmp_readedVec_0 = vec_11;
+      4'b1100 : tmp_readedVec_0 = vec_12;
+      default : tmp_readedVec_0 = vec_13;
     endcase
   end
 
@@ -1391,7 +1443,9 @@ module StreamFifo1delayMultiPort (
       4'b1000 : tmp_readedVec_1 = vec_8;
       4'b1001 : tmp_readedVec_1 = vec_9;
       4'b1010 : tmp_readedVec_1 = vec_10;
-      default : tmp_readedVec_1 = vec_11;
+      4'b1011 : tmp_readedVec_1 = vec_11;
+      4'b1100 : tmp_readedVec_1 = vec_12;
+      default : tmp_readedVec_1 = vec_13;
     endcase
   end
 
@@ -1412,52 +1466,58 @@ module StreamFifo1delayMultiPort (
   assign io_push_1_ready = (4'b0001 < tmp_io_push_1_ready);
   assign io_push_2_ready = (4'b0010 < tmp_io_push_2_ready);
   assign io_push_3_ready = (4'b0011 < tmp_io_push_3_ready);
-  assign io_ov_waterline = (4'b0100 <= io_occupancy);
+  assign io_ov_waterline = (4'b0110 <= io_occupancy);
+  assign pushPtrs_inc_0 = ({1'b0,pushPtrGlobal} + tmp_pushPtrs_inc_0);
   always @(*) begin
-    if((4'b1100 <= tmp_when)) begin
-      pushPtrs_0 = 4'b0000;
+    if((5'h0e <= pushPtrs_inc_0)) begin
+      pushPtrs_0 = (pushPtrs_inc_0 - 5'h0e);
     end else begin
-      pushPtrs_0 = (pushPtrGlobal + 4'b0000);
+      pushPtrs_0 = pushPtrs_inc_0;
     end
   end
 
+  assign pushPtrs_inc_1 = ({1'b0,pushPtrGlobal} + tmp_pushPtrs_inc_1);
   always @(*) begin
-    if((4'b1100 <= tmp_when_1)) begin
-      pushPtrs_1 = 4'b0000;
+    if((5'h0e <= pushPtrs_inc_1)) begin
+      pushPtrs_1 = (pushPtrs_inc_1 - 5'h0e);
     end else begin
-      pushPtrs_1 = (pushPtrGlobal + 4'b0001);
+      pushPtrs_1 = pushPtrs_inc_1;
     end
   end
 
+  assign pushPtrs_inc_2 = ({1'b0,pushPtrGlobal} + tmp_pushPtrs_inc_2);
   always @(*) begin
-    if((4'b1100 <= tmp_when_2)) begin
-      pushPtrs_2 = 4'b0000;
+    if((5'h0e <= pushPtrs_inc_2)) begin
+      pushPtrs_2 = (pushPtrs_inc_2 - 5'h0e);
     end else begin
-      pushPtrs_2 = (pushPtrGlobal + 4'b0010);
+      pushPtrs_2 = pushPtrs_inc_2;
     end
   end
 
+  assign pushPtrs_inc_3 = ({1'b0,pushPtrGlobal} + tmp_pushPtrs_inc_3);
   always @(*) begin
-    if((4'b1100 <= tmp_when_3)) begin
-      pushPtrs_3 = 4'b0000;
+    if((5'h0e <= pushPtrs_inc_3)) begin
+      pushPtrs_3 = (pushPtrs_inc_3 - 5'h0e);
     end else begin
-      pushPtrs_3 = (pushPtrGlobal + 4'b0011);
+      pushPtrs_3 = pushPtrs_inc_3;
     end
   end
 
+  assign popPtrs_inc_0 = ({1'b0,popPtrGlobal} + tmp_popPtrs_inc_0);
   always @(*) begin
-    if((4'b1100 <= tmp_when_4)) begin
-      popPtrs_0 = 4'b0000;
+    if((5'h0e <= popPtrs_inc_0)) begin
+      popPtrs_0 = (popPtrs_inc_0 - 5'h0e);
     end else begin
-      popPtrs_0 = (popPtrGlobal + 4'b0000);
+      popPtrs_0 = popPtrs_inc_0;
     end
   end
 
+  assign popPtrs_inc_1 = ({1'b0,popPtrGlobal} + tmp_popPtrs_inc_1);
   always @(*) begin
-    if((4'b1100 <= tmp_when_5)) begin
-      popPtrs_1 = 4'b0000;
+    if((5'h0e <= popPtrs_inc_1)) begin
+      popPtrs_1 = (popPtrs_inc_1 - 5'h0e);
     end else begin
-      popPtrs_1 = (popPtrGlobal + 4'b0001);
+      popPtrs_1 = popPtrs_inc_1;
     end
   end
 
@@ -1467,16 +1527,16 @@ module StreamFifo1delayMultiPort (
   assign io_pop_0_payload = readedVec_0;
   assign io_pop_1_valid = (4'b0001 < io_occupancy);
   assign io_pop_1_payload = readedVec_1;
-  assign tmp_1 = ({15'd0,1'b1} <<< pushPtrs_0);
-  assign tmp_2 = ({15'd0,1'b1} <<< pushPtrs_1);
-  assign tmp_3 = ({15'd0,1'b1} <<< pushPtrs_2);
-  assign tmp_4 = ({15'd0,1'b1} <<< pushPtrs_3);
-  assign pushPtrGlobalInc = (pushPtrGlobal + tmp_pushPtrGlobalInc);
-  assign popPtrGlobalInc = (popPtrGlobal + tmp_popPtrGlobalInc);
+  assign tmp_1 = ({15'd0,1'b1} <<< pushPtrs_0[3 : 0]);
+  assign tmp_2 = ({15'd0,1'b1} <<< pushPtrs_1[3 : 0]);
+  assign tmp_3 = ({15'd0,1'b1} <<< pushPtrs_2[3 : 0]);
+  assign tmp_4 = ({15'd0,1'b1} <<< pushPtrs_3[3 : 0]);
+  assign pushPtrGlobalInc = ({1'b0,pushPtrGlobal} + tmp_pushPtrGlobalInc);
+  assign popPtrGlobalInc = ({1'b0,popPtrGlobal} + tmp_popPtrGlobalInc);
   assign ptrDif = (pushPtrGlobal - popPtrGlobal);
   always @(*) begin
     if(ptrMatch) begin
-      io_occupancy = (risingOccupancy ? 4'b1100 : 4'b0000);
+      io_occupancy = (risingOccupancy ? 4'b1110 : 4'b0000);
     end else begin
       io_occupancy = ((popPtrGlobal < pushPtrGlobal) ? ptrDif : tmp_io_occupancy);
     end
@@ -1488,23 +1548,23 @@ module StreamFifo1delayMultiPort (
       popPtrGlobal <= 4'b0000;
       risingOccupancy <= 1'b0;
     end else begin
-      if((tmp_when_6 < inc_num)) begin
+      if((tmp_when < inc_num)) begin
         risingOccupancy <= 1'b1;
       end else begin
         risingOccupancy <= 1'b0;
       end
       if((inc_num != 3'b000)) begin
-        if((4'b1100 <= pushPtrGlobalInc)) begin
-          pushPtrGlobal <= 4'b0000;
+        if((5'h0e <= pushPtrGlobalInc)) begin
+          pushPtrGlobal <= tmp_pushPtrGlobal[3:0];
         end else begin
-          pushPtrGlobal <= pushPtrGlobalInc;
+          pushPtrGlobal <= pushPtrGlobalInc[3:0];
         end
       end
       if((dec_num != 2'b00)) begin
-        if((4'b1100 <= popPtrGlobalInc)) begin
-          popPtrGlobal <= 4'b0000;
+        if((5'h0e <= popPtrGlobalInc)) begin
+          popPtrGlobal <= tmp_popPtrGlobal[3:0];
         end else begin
-          popPtrGlobal <= popPtrGlobalInc;
+          popPtrGlobal <= popPtrGlobalInc[3:0];
         end
       end
       if(io_flush) begin
@@ -1553,6 +1613,12 @@ module StreamFifo1delayMultiPort (
       if(tmp_1[11]) begin
         vec_11 <= io_push_0_payload;
       end
+      if(tmp_1[12]) begin
+        vec_12 <= io_push_0_payload;
+      end
+      if(tmp_1[13]) begin
+        vec_13 <= io_push_0_payload;
+      end
     end
     if(pushing_vec_1) begin
       if(tmp_2[0]) begin
@@ -1590,6 +1656,12 @@ module StreamFifo1delayMultiPort (
       end
       if(tmp_2[11]) begin
         vec_11 <= io_push_1_payload;
+      end
+      if(tmp_2[12]) begin
+        vec_12 <= io_push_1_payload;
+      end
+      if(tmp_2[13]) begin
+        vec_13 <= io_push_1_payload;
       end
     end
     if(pushing_vec_2) begin
@@ -1629,6 +1701,12 @@ module StreamFifo1delayMultiPort (
       if(tmp_3[11]) begin
         vec_11 <= io_push_2_payload;
       end
+      if(tmp_3[12]) begin
+        vec_12 <= io_push_2_payload;
+      end
+      if(tmp_3[13]) begin
+        vec_13 <= io_push_2_payload;
+      end
     end
     if(pushing_vec_3) begin
       if(tmp_4[0]) begin
@@ -1667,6 +1745,12 @@ module StreamFifo1delayMultiPort (
       if(tmp_4[11]) begin
         vec_11 <= io_push_3_payload;
       end
+      if(tmp_4[12]) begin
+        vec_12 <= io_push_3_payload;
+      end
+      if(tmp_4[13]) begin
+        vec_13 <= io_push_3_payload;
+      end
     end
   end
 
@@ -1684,35 +1768,41 @@ module PopToleranceFifo (
   output reg          pop_pop_real,
   output     [2:0]    head,
   input               flush,
-  output     [2:0]    occupancy,
+  output reg [2:0]    occupancy,
   input               clk,
   input               resetn
 );
 
   reg        [2:0]    tmp_tmp_pop_pop_out_data;
+  wire       [2:0]    tmp_occupancy;
   reg        [2:0]    vec_0;
   reg        [2:0]    vec_1;
   reg        [2:0]    vec_2;
   reg        [2:0]    vec_3;
-  reg        [1:0]    pushPtrGlobal;
-  reg        [1:0]    popPtrGlobal;
+  reg        [2:0]    vec_4;
+  reg        [2:0]    vec_5;
+  reg        [2:0]    pushPtrGlobal;
+  reg        [2:0]    popPtrGlobal;
   wire                ptrMatch;
   reg                 risingOccupancy;
   wire                empty;
   wire                full;
   wire                pushing;
   wire       [2:0]    tmp_pop_pop_out_data;
-  wire       [3:0]    tmp_1;
+  wire       [7:0]    tmp_1;
   wire       [2:0]    tmp_vec_0;
-  wire       [3:0]    tmp_2;
-  wire       [1:0]    ptrDif;
+  wire       [7:0]    tmp_2;
+  wire       [2:0]    ptrDif;
 
+  assign tmp_occupancy = (3'b110 + ptrDif);
   always @(*) begin
     case(popPtrGlobal)
-      2'b00 : tmp_tmp_pop_pop_out_data = vec_0;
-      2'b01 : tmp_tmp_pop_pop_out_data = vec_1;
-      2'b10 : tmp_tmp_pop_pop_out_data = vec_2;
-      default : tmp_tmp_pop_pop_out_data = vec_3;
+      3'b000 : tmp_tmp_pop_pop_out_data = vec_0;
+      3'b001 : tmp_tmp_pop_pop_out_data = vec_1;
+      3'b010 : tmp_tmp_pop_pop_out_data = vec_2;
+      3'b011 : tmp_tmp_pop_pop_out_data = vec_3;
+      3'b100 : tmp_tmp_pop_pop_out_data = vec_4;
+      default : tmp_tmp_pop_pop_out_data = vec_5;
     endcase
   end
 
@@ -1721,9 +1811,9 @@ module PopToleranceFifo (
   assign full = (ptrMatch && risingOccupancy);
   assign pushing = (push_valid && push_ready);
   assign push_ready = (! full);
-  assign pop_ready = ((! empty) && (head != 3'b000));
+  assign pop_ready = ((! empty) || (empty && (head != 3'b000)));
   assign tmp_pop_pop_out_data = tmp_tmp_pop_pop_out_data;
-  assign tmp_1 = ({3'd0,1'b1} <<< popPtrGlobal);
+  assign tmp_1 = ({7'd0,1'b1} <<< popPtrGlobal);
   assign head = tmp_pop_pop_out_data;
   always @(*) begin
     pop_pop_out_data = tmp_pop_pop_out_data;
@@ -1744,35 +1834,44 @@ module PopToleranceFifo (
   end
 
   assign tmp_vec_0 = (tmp_pop_pop_out_data - pop_pop_req_num);
-  assign tmp_2 = ({3'd0,1'b1} <<< pushPtrGlobal);
+  assign tmp_2 = ({7'd0,1'b1} <<< pushPtrGlobal);
   assign ptrDif = (pushPtrGlobal - popPtrGlobal);
-  assign occupancy = {(risingOccupancy && ptrMatch),ptrDif};
+  always @(*) begin
+    if(ptrMatch) begin
+      occupancy = (risingOccupancy ? 3'b110 : 3'b000);
+    end else begin
+      occupancy = ((popPtrGlobal < pushPtrGlobal) ? ptrDif : tmp_occupancy);
+    end
+  end
+
   always @(posedge clk or negedge resetn) begin
     if(!resetn) begin
-      pushPtrGlobal <= 2'b00;
-      popPtrGlobal <= 2'b00;
+      pushPtrGlobal <= 3'b000;
+      popPtrGlobal <= 3'b000;
       risingOccupancy <= 1'b0;
     end else begin
       if((pop_valid && pop_ready)) begin
         if((tmp_pop_pop_out_data == pop_pop_req_num)) begin
-          if((2'b11 <= popPtrGlobal)) begin
-            popPtrGlobal <= 2'b00;
+          if((3'b101 <= popPtrGlobal)) begin
+            popPtrGlobal <= 3'b000;
           end else begin
-            popPtrGlobal <= (popPtrGlobal + 2'b01);
+            popPtrGlobal <= (popPtrGlobal + 3'b001);
           end
         end
       end
-      if((2'b11 <= pushPtrGlobal)) begin
-        pushPtrGlobal <= 2'b00;
-      end else begin
-        pushPtrGlobal <= (pushPtrGlobal + 2'b01);
+      if(pushing) begin
+        if((3'b101 <= pushPtrGlobal)) begin
+          pushPtrGlobal <= 3'b000;
+        end else begin
+          pushPtrGlobal <= (pushPtrGlobal + 3'b001);
+        end
       end
       if((pushing != pop_pop_real)) begin
         risingOccupancy <= pushing;
       end
       if(flush) begin
-        pushPtrGlobal <= 2'b00;
-        popPtrGlobal <= 2'b00;
+        pushPtrGlobal <= 3'b000;
+        popPtrGlobal <= 3'b000;
         risingOccupancy <= 1'b0;
       end
     end
@@ -1792,6 +1891,12 @@ module PopToleranceFifo (
       if(tmp_1[3]) begin
         vec_3 <= tmp_vec_0;
       end
+      if(tmp_1[4]) begin
+        vec_4 <= tmp_vec_0;
+      end
+      if(tmp_1[5]) begin
+        vec_5 <= tmp_vec_0;
+      end
     end
     if(pushing) begin
       if(tmp_2[0]) begin
@@ -1805,6 +1910,12 @@ module PopToleranceFifo (
       end
       if(tmp_2[3]) begin
         vec_3 <= push_payload;
+      end
+      if(tmp_2[4]) begin
+        vec_4 <= push_payload;
+      end
+      if(tmp_2[5]) begin
+        vec_5 <= push_payload;
       end
     end
   end
@@ -1821,30 +1932,33 @@ module StreamFifoWithHead (
   output     [31:0]   io_pop_payload,
   output     [31:0]   io_head,
   input               io_flush,
-  output     [2:0]    io_occupancy,
+  output reg [2:0]    io_occupancy,
   input               clk,
   input               resetn
 );
 
-  wire       [1:0]    tmp_pushPtr_valueNext;
+  wire       [2:0]    tmp_pushPtr_valueNext;
   wire       [0:0]    tmp_pushPtr_valueNext_1;
-  wire       [1:0]    tmp_popPtr_valueNext;
+  wire       [2:0]    tmp_popPtr_valueNext;
   wire       [0:0]    tmp_popPtr_valueNext_1;
   reg        [31:0]   tmp_readed;
+  wire       [2:0]    tmp_io_occupancy;
   reg        [31:0]   vec_0;
   reg        [31:0]   vec_1;
   reg        [31:0]   vec_2;
   reg        [31:0]   vec_3;
+  reg        [31:0]   vec_4;
+  reg        [31:0]   vec_5;
   reg                 pushPtr_willIncrement;
   reg                 pushPtr_willClear;
-  reg        [1:0]    pushPtr_valueNext;
-  reg        [1:0]    pushPtr_value;
+  reg        [2:0]    pushPtr_valueNext;
+  reg        [2:0]    pushPtr_value;
   wire                pushPtr_willOverflowIfInc;
   wire                pushPtr_willOverflow;
   reg                 popPtr_willIncrement;
   reg                 popPtr_willClear;
-  reg        [1:0]    popPtr_valueNext;
-  reg        [1:0]    popPtr_value;
+  reg        [2:0]    popPtr_valueNext;
+  reg        [2:0]    popPtr_value;
   wire                popPtr_willOverflowIfInc;
   wire                popPtr_willOverflow;
   wire                ptrMatch;
@@ -1854,19 +1968,22 @@ module StreamFifoWithHead (
   wire                pushing;
   wire                popping;
   wire       [31:0]   readed;
-  wire       [3:0]    tmp_1;
-  wire       [1:0]    ptrDif;
+  wire       [7:0]    tmp_1;
+  wire       [2:0]    ptrDif;
 
   assign tmp_pushPtr_valueNext_1 = pushPtr_willIncrement;
-  assign tmp_pushPtr_valueNext = {1'd0, tmp_pushPtr_valueNext_1};
+  assign tmp_pushPtr_valueNext = {2'd0, tmp_pushPtr_valueNext_1};
   assign tmp_popPtr_valueNext_1 = popPtr_willIncrement;
-  assign tmp_popPtr_valueNext = {1'd0, tmp_popPtr_valueNext_1};
+  assign tmp_popPtr_valueNext = {2'd0, tmp_popPtr_valueNext_1};
+  assign tmp_io_occupancy = (3'b110 + ptrDif);
   always @(*) begin
     case(popPtr_value)
-      2'b00 : tmp_readed = vec_0;
-      2'b01 : tmp_readed = vec_1;
-      2'b10 : tmp_readed = vec_2;
-      default : tmp_readed = vec_3;
+      3'b000 : tmp_readed = vec_0;
+      3'b001 : tmp_readed = vec_1;
+      3'b010 : tmp_readed = vec_2;
+      3'b011 : tmp_readed = vec_3;
+      3'b100 : tmp_readed = vec_4;
+      default : tmp_readed = vec_5;
     endcase
   end
 
@@ -1884,12 +2001,16 @@ module StreamFifoWithHead (
     end
   end
 
-  assign pushPtr_willOverflowIfInc = (pushPtr_value == 2'b11);
+  assign pushPtr_willOverflowIfInc = (pushPtr_value == 3'b101);
   assign pushPtr_willOverflow = (pushPtr_willOverflowIfInc && pushPtr_willIncrement);
   always @(*) begin
-    pushPtr_valueNext = (pushPtr_value + tmp_pushPtr_valueNext);
+    if(pushPtr_willOverflow) begin
+      pushPtr_valueNext = 3'b000;
+    end else begin
+      pushPtr_valueNext = (pushPtr_value + tmp_pushPtr_valueNext);
+    end
     if(pushPtr_willClear) begin
-      pushPtr_valueNext = 2'b00;
+      pushPtr_valueNext = 3'b000;
     end
   end
 
@@ -1907,12 +2028,16 @@ module StreamFifoWithHead (
     end
   end
 
-  assign popPtr_willOverflowIfInc = (popPtr_value == 2'b11);
+  assign popPtr_willOverflowIfInc = (popPtr_value == 3'b101);
   assign popPtr_willOverflow = (popPtr_willOverflowIfInc && popPtr_willIncrement);
   always @(*) begin
-    popPtr_valueNext = (popPtr_value + tmp_popPtr_valueNext);
+    if(popPtr_willOverflow) begin
+      popPtr_valueNext = 3'b000;
+    end else begin
+      popPtr_valueNext = (popPtr_value + tmp_popPtr_valueNext);
+    end
     if(popPtr_willClear) begin
-      popPtr_valueNext = 2'b00;
+      popPtr_valueNext = 3'b000;
     end
   end
 
@@ -1926,13 +2051,20 @@ module StreamFifoWithHead (
   assign io_head = readed;
   assign io_pop_valid = (! empty);
   assign io_pop_payload = readed;
-  assign tmp_1 = ({3'd0,1'b1} <<< pushPtr_value);
+  assign tmp_1 = ({7'd0,1'b1} <<< pushPtr_value);
   assign ptrDif = (pushPtr_value - popPtr_value);
-  assign io_occupancy = {(risingOccupancy && ptrMatch),ptrDif};
+  always @(*) begin
+    if(ptrMatch) begin
+      io_occupancy = (risingOccupancy ? 3'b110 : 3'b000);
+    end else begin
+      io_occupancy = ((popPtr_value < pushPtr_value) ? ptrDif : tmp_io_occupancy);
+    end
+  end
+
   always @(posedge clk or negedge resetn) begin
     if(!resetn) begin
-      pushPtr_value <= 2'b00;
-      popPtr_value <= 2'b00;
+      pushPtr_value <= 3'b000;
+      popPtr_value <= 3'b000;
       risingOccupancy <= 1'b0;
     end else begin
       pushPtr_value <= pushPtr_valueNext;
@@ -1959,6 +2091,12 @@ module StreamFifoWithHead (
       end
       if(tmp_1[3]) begin
         vec_3 <= io_push_payload;
+      end
+      if(tmp_1[4]) begin
+        vec_4 <= io_push_payload;
+      end
+      if(tmp_1[5]) begin
+        vec_5 <= io_push_payload;
       end
     end
   end

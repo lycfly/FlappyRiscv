@@ -43,7 +43,7 @@ class PopToleranceFifo(val dataType: HardType[UInt], val depth: Int) extends Com
   val popping = io.pop.pop_real
   io.push.ready := !full
 
-  io.pop.ready := !empty && io.head =/= 0
+  io.pop.ready := !empty || (empty && io.head =/= 0)
   io.head := vec(popPtrGlobal)
 
   io.pop.pop_out_data := vec(popPtrGlobal)
@@ -63,12 +63,12 @@ class PopToleranceFifo(val dataType: HardType[UInt], val depth: Int) extends Com
 
   when(pushing) {
     vec.write(pushPtrGlobal, io.push.payload)
-  }
 
-  when(pushPtrGlobal >= depth - 1) {
-    pushPtrGlobal := 0
-  }.otherwise {
-    pushPtrGlobal := pushPtrGlobal + 1
+    when(pushPtrGlobal >= depth - 1) {
+      pushPtrGlobal := 0
+    }.otherwise {
+      pushPtrGlobal := pushPtrGlobal + 1
+    }
   }
 
   when(pushing =/= popping) {

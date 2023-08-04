@@ -33,9 +33,9 @@ class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
   def Rvf: Boolean = false
   def Rvd: Boolean = false
   object FetchConfig{
-    def FetchAddrBuffDepth = 4
+    def FetchAddrBuffDepth = 6
 //    def FetchInstrBuffDepth = 12
-    def FetchInstrBuffWaterline = 4
+    def FetchInstrBuffWaterline = 6
   }
 
   def ibusConfig = MemBusConfig(

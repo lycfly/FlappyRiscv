@@ -220,13 +220,14 @@ class fetch_unit(resetVec: BigInt = 0x0)(implicit conf: Config) extends Componen
   val pc_step_all = Vec(UInt(), conf.DecoderWidth + 1)
   pc_step_all(0) := 0       // first pop instr's pc is raw value of addressFifo.head
   val real_instr = Vec(Bits(32 bits),conf.DecoderWidth)
+  val pc_step = Vec(UInt(3 bits), conf.DecoderWidth)
   if(conf.Rvc){
     for (i <- 0 until conf.DecoderWidth) {
       val instr_isRvc = instrFifo.io.pop(i).payload.msb
       val decomp_instr = RvcDecompressor(rvf=conf.Rvf,rvd=conf.Rvd, xlen=conf.xlen, i=instrFifo.io.pop(i).payload(conf.xlen - 1 downto 0))
       real_instr(i) := (instr_isRvc & ~decomp_instr.illegal) ? decomp_instr.inst | instrFifo.io.pop(i).payload(conf.xlen - 1 downto 0)
-      val pc_step = instr_isRvc ? U"3'd2" | U"3'd4"
-      pc_step_all(i+1) := pc_step_all(i) + pc_step
+      pc_step(i) := instr_isRvc ? U"3'd2" | U"3'd4"
+      pc_step_all(i+1) := pc_step_all(i) + pc_step(i)
     }
   }
   else{
@@ -247,7 +248,9 @@ class fetch_unit(resetVec: BigInt = 0x0)(implicit conf: Config) extends Componen
     io.if2id_itf(i).valid := instrFifo.io.pop(i).fire
   }
 
-  when(instrFifo.io.pop(0).fire){    //update pc_pop_offset buffer for next instr in the same address
+  when(addressFifo.io.pop.fire){
+    pc_pop_offset := 0
+  }.elsewhen(instrFifo.io.pop(0).fire){    //update pc_pop_offset buffer for next instr in the same address
     pc_pop_offset := pc_step_all(conf.DecoderWidth)
   }
 

@@ -1,0 +1,161 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Thu Aug  3 15:47:16 2023
+[*]
+[dumpfile] "/home/lyc/projects/riscv/FlappyRiscv/cocoTest/fetch_unit/dump.fst"
+[dumpfile_mtime] "Thu Aug  3 15:41:04 2023"
+[dumpfile_size] 12583
+[savefile] "/home/lyc/projects/riscv/FlappyRiscv/cocoTest/fetch_unit/debug.gtkw"
+[timestart] 54550
+[size] 1860 1016
+[pos] -1 -1
+*-12.339939 66000 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] fetch_unit.
+[sst_width] 368
+[signals_width] 430
+[sst_expanded] 1
+[sst_vpaned_height] 280
+@28
+clk
+resetn
+core_en
+fetchStage_flush
+fetchStage_isDone
+fetchStage_isReady
+@24
+ibus_cmd_payload_address[31:0]
+@28
+ibus_cmd_ready
+ibus_cmd_valid
+@22
+ibus_rsp_payload_rdata[63:0]
+@28
+ibus_rsp_ready
+ibus_rsp_valid
+@22
+if2id_itf_0_instr_data[31:0]
+if2id_itf_0_instr_pc[31:0]
+@28
+if2id_itf_0_valid
+@22
+if2id_itf_1_instr_data[31:0]
+if2id_itf_1_instr_pc[31:0]
+@28
+if2id_itf_1_valid
+@22
+pcJumpTarget_payload[31:0]
+@28
+pcJumpTarget_valid
+@22
+pcPredicted_payload[31:0]
+@28
+pcPredicted_valid
+@200
+-
+@28
+fetch_unit.addressFifo_io_flush
+@22
+fetch_unit.addressFifo_io_head[31:0]
+@24
+fetch_unit.addressFifo_io_occupancy[2:0]
+@22
+fetch_unit.addressFifo_io_pop_payload[31:0]
+@28
+fetch_unit.addressFifo_io_pop_ready
+fetch_unit.addressFifo_io_pop_valid
+fetch_unit.addressFifo_io_push_ready
+fetch_unit.addressFifo_io_push_valid
+fetch_unit.addressOffset[1:0]
+@200
+-
+@28
+fetch_unit.validNumFifo_flush
+@24
+fetch_unit.validNumFifo_head[2:0]
+fetch_unit.validNumFifo_occupancy[2:0]
+fetch_unit.validNumFifo_pop_pop_out_data[2:0]
+@28
+fetch_unit.validNumFifo_pop_pop_real
+@24
+fetch_unit.validNumFifo_pop_pop_req_num[2:0]
+@28
+fetch_unit.validNumFifo_pop_ready
+fetch_unit.validNumFifo_pop_valid
+@24
+fetch_unit.validNumFifo_push_payload[2:0]
+@28
+fetch_unit.validNumFifo_push_ready
+fetch_unit.validNumFifo_push_valid
+fetch_unit.validNumFifo.pushing
+@24
+fetch_unit.validNumFifo.vec_0[2:0]
+fetch_unit.validNumFifo.vec_1[2:0]
+fetch_unit.validNumFifo.vec_2[2:0]
+fetch_unit.validNumFifo.vec_3[2:0]
+fetch_unit.validNumFifo.vec_4[2:0]
+fetch_unit.validNumFifo.vec_5[2:0]
+fetch_unit.validNumFifo.popPtrGlobal[2:0]
+fetch_unit.validNumFifo.pushPtrGlobal[2:0]
+@200
+-
+@28
+fetch_unit.instrFifo_io_ov_waterline
+@24
+fetch_unit.instrFifo_io_occupancy[3:0]
+@28
+fetch_unit.instrFifo_io_ov_waterline
+@22
+fetch_unit.instrFifo_io_pop_0_payload[32:0]
+@28
+fetch_unit.instrFifo_io_pop_0_valid
+fetch_unit.instrFifo.io_pop_0_ready
+@22
+fetch_unit.instrFifo_io_pop_1_payload[32:0]
+@28
+fetch_unit.instrFifo_io_pop_1_valid
+fetch_unit.instrFifo.io_pop_1_ready
+@22
+fetch_unit.instrFifo_io_push_0_payload[32:0]
+@28
+fetch_unit.instrFifo_io_push_0_ready
+fetch_unit.instrFifo_io_push_0_valid
+@22
+fetch_unit.instrFifo_io_push_1_payload[32:0]
+@28
+fetch_unit.instrFifo_io_push_1_ready
+fetch_unit.instrFifo_io_push_1_valid
+@22
+fetch_unit.instrFifo_io_push_2_payload[32:0]
+@28
+fetch_unit.instrFifo_io_push_2_ready
+fetch_unit.instrFifo_io_push_2_valid
+@22
+fetch_unit.instrFifo_io_push_3_payload[32:0]
+@28
+fetch_unit.instrFifo_io_push_3_ready
+fetch_unit.instrFifo_io_push_3_valid
+fetch_unit.instr_pop_valid[1:0]
+fetch_unit.instr_pop_valid_popc_cnt_out[1:0]
+fetch_unit.instr_push_valid_vec[3:0]
+@24
+fetch_unit.instrFifo.popPtrGlobal[3:0]
+fetch_unit.instrFifo.pushPtrGlobal[3:0]
+@25
+fetch_unit.instrFifo.pushPtrGlobalInc[3:0]
+@28
+fetch_unit.instrFifo.io_flush
+fetch_unit.tail_one_valid_vec_0
+fetch_unit.tail_one_valid_vec_1
+fetch_unit.tail_one_valid_vec_2
+fetch_unit.tail_one_valid_vec_3
+fetch_unit.trailone_index_0_cnt_out[2:0]
+fetch_unit.trailone_index_1_cnt_out[2:0]
+fetch_unit.trailone_index_2_cnt_out[2:0]
+fetch_unit.trailone_index_3_cnt_out[2:0]
+fetch_unit.tail_one_index_vec_0[1:0]
+fetch_unit.tail_one_index_vec_1[1:0]
+fetch_unit.tail_one_index_vec_2[1:0]
+fetch_unit.tail_one_index_vec_3[1:0]
+fetch_unit.instr_push_valid_vec_popc_cnt_out[2:0]
+[pattern_trace] 1
+[pattern_trace] 0

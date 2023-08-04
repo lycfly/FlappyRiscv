@@ -48,23 +48,27 @@ class StreamFifo1delayMultiPort[T <: Data](val dataType: HardType[T],val pushNum
 
   val pushPtrs = Vec(UInt(),pushNum)
   val popPtrs = Vec(UInt(), popNum)
+  val pushPtrs_inc = Vec(UInt(), pushNum)
+  val popPtrs_inc = Vec(UInt(), popNum)
   for(i <- 0 until pushNum){
-    when(pushPtrGlobal + i >= depth){
-      pushPtrs(i) := 0
-    }.otherwise{
-      pushPtrs(i) := pushPtrGlobal + i
-    }
+      pushPtrs_inc(i) := pushPtrGlobal +^ U(i)
+      when(pushPtrs_inc(i) >= depth) {
+        pushPtrs(i) := pushPtrs_inc(i) - depth
+      }.otherwise {
+        pushPtrs(i) := pushPtrs_inc(i)
+      }
   }
   for (i <- 0 until popNum) {
-    when(popPtrGlobal + i >= depth) {
-      popPtrs(i) := 0
-    }.otherwise {
-      popPtrs(i) := popPtrGlobal + i
-    }
+    popPtrs_inc(i) := popPtrGlobal +^ U(i)
+    when(popPtrs_inc(i) >= depth) {
+        popPtrs(i) := popPtrs_inc(i) - depth
+      }.otherwise {
+        popPtrs(i) := popPtrs_inc(i)
+      }
   }
   val readedVec = Vec(for(i <- 0 until popNum) yield {
-    if(useVec) vec(popPtrs(i) + i)
-    else ram(popPtrs(i) + i)
+    if(useVec) vec(popPtrs(i)(log2Up(depth)-1 downto 0))
+    else ram(popPtrs(i)(log2Up(depth)-1 downto 0))
   })
 
   for(i <- 0 until popNum){
@@ -87,27 +91,27 @@ class StreamFifo1delayMultiPort[T <: Data](val dataType: HardType[T],val pushNum
   for(i <- 0 until pushNum){
     when(pushing_vec(i)) {
       if (useVec)
-        vec.write(pushPtrs(i), io.push(i).payload)
+        vec.write(pushPtrs(i)(log2Up(depth)-1 downto 0), io.push(i).payload)
       else
-        ram.write(pushPtrs(i), io.push(i).payload)
+        ram.write(pushPtrs(i)(log2Up(depth)-1 downto 0), io.push(i).payload)
     }
   }
   
-  val pushPtrGlobalInc = pushPtrGlobal + inc_num.resized
-  val popPtrGlobalInc = popPtrGlobal + dec_num.resized
+  val pushPtrGlobalInc = pushPtrGlobal +^ inc_num.resized
+  val popPtrGlobalInc = popPtrGlobal +^ dec_num.resized
 
   when(inc_num =/= 0){
     when(pushPtrGlobalInc >= depth){
-      pushPtrGlobal := 0
+      pushPtrGlobal := (pushPtrGlobalInc - depth).resized
     }.otherwise{
-      pushPtrGlobal := pushPtrGlobalInc
+      pushPtrGlobal := pushPtrGlobalInc.resized
     }
   }
   when(dec_num =/= 0) {
     when(popPtrGlobalInc >= depth){
-      popPtrGlobal := 0
+      popPtrGlobal := (popPtrGlobalInc - depth).resized
     }.otherwise{
-      popPtrGlobal := popPtrGlobalInc
+      popPtrGlobal := popPtrGlobalInc.resized
     }
   }
   

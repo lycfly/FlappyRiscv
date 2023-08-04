@@ -128,8 +128,11 @@ class Vtop___024root final : public VerilatedModule {
         CData/*2:0*/ fetch_unit__DOT__pc_pop_offset;
         CData/*2:0*/ fetch_unit__DOT__pc_step_all_1;
         CData/*2:0*/ fetch_unit__DOT__pc_step_all_2;
-        CData/*0:0*/ fetch_unit__DOT__tmp_pc_step_all_1;
-        CData/*0:0*/ fetch_unit__DOT__tmp_pc_step_all_2;
+        CData/*2:0*/ fetch_unit__DOT__pc_step_0;
+        CData/*2:0*/ fetch_unit__DOT__pc_step_1;
+        CData/*0:0*/ fetch_unit__DOT__tmp_real_instr_0;
+        CData/*0:0*/ fetch_unit__DOT__tmp_real_instr_1;
+        CData/*0:0*/ fetch_unit__DOT__toplevel_addressFifo_io_pop_fire;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__io_push_valid;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__io_push_ready;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__io_pop_valid;
@@ -138,22 +141,23 @@ class Vtop___024root final : public VerilatedModule {
         CData/*2:0*/ fetch_unit__DOT__addressFifo__DOT__io_occupancy;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__clk;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__resetn;
-        CData/*1:0*/ fetch_unit__DOT__addressFifo__DOT__tmp_pushPtr_valueNext;
+        CData/*2:0*/ fetch_unit__DOT__addressFifo__DOT__tmp_pushPtr_valueNext;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__tmp_pushPtr_valueNext_1;
-        CData/*1:0*/ fetch_unit__DOT__addressFifo__DOT__tmp_popPtr_valueNext;
+        CData/*2:0*/ fetch_unit__DOT__addressFifo__DOT__tmp_popPtr_valueNext;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__tmp_popPtr_valueNext_1;
-        CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__pushPtr_willIncrement;
-        CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__pushPtr_willClear;
-        CData/*1:0*/ fetch_unit__DOT__addressFifo__DOT__pushPtr_valueNext;
     };
     struct {
-        CData/*1:0*/ fetch_unit__DOT__addressFifo__DOT__pushPtr_value;
+        CData/*2:0*/ fetch_unit__DOT__addressFifo__DOT__tmp_io_occupancy;
+        CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__pushPtr_willIncrement;
+        CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__pushPtr_willClear;
+        CData/*2:0*/ fetch_unit__DOT__addressFifo__DOT__pushPtr_valueNext;
+        CData/*2:0*/ fetch_unit__DOT__addressFifo__DOT__pushPtr_value;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__pushPtr_willOverflowIfInc;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__pushPtr_willOverflow;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__popPtr_willIncrement;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__popPtr_willClear;
-        CData/*1:0*/ fetch_unit__DOT__addressFifo__DOT__popPtr_valueNext;
-        CData/*1:0*/ fetch_unit__DOT__addressFifo__DOT__popPtr_value;
+        CData/*2:0*/ fetch_unit__DOT__addressFifo__DOT__popPtr_valueNext;
+        CData/*2:0*/ fetch_unit__DOT__addressFifo__DOT__popPtr_value;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__popPtr_willOverflowIfInc;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__popPtr_willOverflow;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__ptrMatch;
@@ -162,8 +166,8 @@ class Vtop___024root final : public VerilatedModule {
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__full;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__pushing;
         CData/*0:0*/ fetch_unit__DOT__addressFifo__DOT__popping;
-        CData/*3:0*/ fetch_unit__DOT__addressFifo__DOT__tmp_1;
-        CData/*1:0*/ fetch_unit__DOT__addressFifo__DOT__ptrDif;
+        CData/*7:0*/ fetch_unit__DOT__addressFifo__DOT__tmp_1;
+        CData/*2:0*/ fetch_unit__DOT__addressFifo__DOT__ptrDif;
         CData/*0:0*/ fetch_unit__DOT__validNumFifo__DOT__push_valid;
         CData/*0:0*/ fetch_unit__DOT__validNumFifo__DOT__push_ready;
         CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__push_payload;
@@ -178,22 +182,25 @@ class Vtop___024root final : public VerilatedModule {
         CData/*0:0*/ fetch_unit__DOT__validNumFifo__DOT__clk;
         CData/*0:0*/ fetch_unit__DOT__validNumFifo__DOT__resetn;
         CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__tmp_tmp_pop_pop_out_data;
+        CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__tmp_occupancy;
         CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__vec_0;
         CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__vec_1;
         CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__vec_2;
         CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__vec_3;
-        CData/*1:0*/ fetch_unit__DOT__validNumFifo__DOT__pushPtrGlobal;
-        CData/*1:0*/ fetch_unit__DOT__validNumFifo__DOT__popPtrGlobal;
+        CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__vec_4;
+        CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__vec_5;
+        CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__pushPtrGlobal;
+        CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__popPtrGlobal;
         CData/*0:0*/ fetch_unit__DOT__validNumFifo__DOT__ptrMatch;
         CData/*0:0*/ fetch_unit__DOT__validNumFifo__DOT__risingOccupancy;
         CData/*0:0*/ fetch_unit__DOT__validNumFifo__DOT__empty;
         CData/*0:0*/ fetch_unit__DOT__validNumFifo__DOT__full;
         CData/*0:0*/ fetch_unit__DOT__validNumFifo__DOT__pushing;
         CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__tmp_pop_pop_out_data;
-        CData/*3:0*/ fetch_unit__DOT__validNumFifo__DOT__tmp_1;
+        CData/*7:0*/ fetch_unit__DOT__validNumFifo__DOT__tmp_1;
         CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__tmp_vec_0;
-        CData/*3:0*/ fetch_unit__DOT__validNumFifo__DOT__tmp_2;
-        CData/*1:0*/ fetch_unit__DOT__validNumFifo__DOT__ptrDif;
+        CData/*7:0*/ fetch_unit__DOT__validNumFifo__DOT__tmp_2;
+        CData/*2:0*/ fetch_unit__DOT__validNumFifo__DOT__ptrDif;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__io_push_0_valid;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__io_push_0_ready;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__io_push_1_valid;
@@ -204,6 +211,8 @@ class Vtop___024root final : public VerilatedModule {
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__io_push_3_ready;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__io_pop_0_valid;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__io_pop_0_ready;
+    };
+    struct {
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__io_pop_1_valid;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__io_pop_1_ready;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__io_flush;
@@ -211,8 +220,6 @@ class Vtop___024root final : public VerilatedModule {
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__io_ov_waterline;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__clk;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__resetn;
-    };
-    struct {
         CData/*1:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_inc_num_1;
         CData/*1:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_inc_num_2;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_inc_num_3;
@@ -226,17 +233,27 @@ class Vtop___024root final : public VerilatedModule {
         CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_io_push_1_ready;
         CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_io_push_2_ready;
         CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_io_push_3_ready;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_when;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_when_1;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_when_2;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_when_3;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_when_4;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_when_5;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrs_inc_0;
+        CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrs_inc_0_1;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrs_inc_1;
+        CData/*1:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrs_inc_1_1;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrs_inc_2;
+        CData/*2:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrs_inc_2_1;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrs_inc_3;
+        CData/*2:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrs_inc_3_1;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_popPtrs_inc_0;
+        CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_popPtrs_inc_0_1;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_popPtrs_inc_1;
+        CData/*1:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_popPtrs_inc_1_1;
         CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_readedVec_0_1;
         CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_readedVec_1_1;
-        CData/*2:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_when_6;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrGlobalInc;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_popPtrGlobalInc;
+        CData/*2:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_when;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrGlobalInc;
+        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrGlobalInc_1;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_popPtrGlobalInc;
+        CData/*2:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_popPtrGlobalInc_1;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_pushPtrGlobal;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_popPtrGlobal;
         CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_io_occupancy;
         CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrGlobal;
         CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__popPtrGlobal;
@@ -254,14 +271,22 @@ class Vtop___024root final : public VerilatedModule {
         CData/*2:0*/ fetch_unit__DOT__instrFifo__DOT__inc_num;
         CData/*0:0*/ fetch_unit__DOT__instrFifo__DOT__tmp_dec_num;
         CData/*1:0*/ fetch_unit__DOT__instrFifo__DOT__dec_num;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_0;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_1;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_2;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_3;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__popPtrs_0;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__popPtrs_1;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrGlobalInc;
-        CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__popPtrGlobalInc;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_0;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_1;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_2;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_3;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__popPtrs_0;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__popPtrs_1;
+    };
+    struct {
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_inc_0;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_inc_1;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_inc_2;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrs_inc_3;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__popPtrs_inc_0;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__popPtrs_inc_1;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__pushPtrGlobalInc;
+        CData/*4:0*/ fetch_unit__DOT__instrFifo__DOT__popPtrGlobalInc;
         CData/*3:0*/ fetch_unit__DOT__instrFifo__DOT__ptrDif;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_0__DOT__mode;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_0__DOT__lead;
@@ -277,8 +302,7 @@ class Vtop___024root final : public VerilatedModule {
         CData/*1:0*/ fetch_unit__DOT__trailone_index_0__DOT__stage_index1_1;
         CData/*1:0*/ fetch_unit__DOT__trailone_index_0__DOT__stage_index2_0;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_0__DOT__empty;
-    };
-    struct {
+        CData/*1:0*/ fetch_unit__DOT__trailone_index_0__DOT__out_remap;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_1__DOT__mode;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_1__DOT__lead;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_1__DOT__trail;
@@ -293,6 +317,7 @@ class Vtop___024root final : public VerilatedModule {
         CData/*1:0*/ fetch_unit__DOT__trailone_index_1__DOT__stage_index1_1;
         CData/*1:0*/ fetch_unit__DOT__trailone_index_1__DOT__stage_index2_0;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_1__DOT__empty;
+        CData/*1:0*/ fetch_unit__DOT__trailone_index_1__DOT__out_remap;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_2__DOT__mode;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_2__DOT__lead;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_2__DOT__trail;
@@ -307,6 +332,7 @@ class Vtop___024root final : public VerilatedModule {
         CData/*1:0*/ fetch_unit__DOT__trailone_index_2__DOT__stage_index1_1;
         CData/*1:0*/ fetch_unit__DOT__trailone_index_2__DOT__stage_index2_0;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_2__DOT__empty;
+        CData/*1:0*/ fetch_unit__DOT__trailone_index_2__DOT__out_remap;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_3__DOT__mode;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_3__DOT__lead;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_3__DOT__trail;
@@ -317,10 +343,13 @@ class Vtop___024root final : public VerilatedModule {
         CData/*3:0*/ fetch_unit__DOT__trailone_index_3__DOT__datain_reverse;
         CData/*3:0*/ fetch_unit__DOT__trailone_index_3__DOT__stage_node_0;
         CData/*1:0*/ fetch_unit__DOT__trailone_index_3__DOT__stage_node_1;
+    };
+    struct {
         CData/*1:0*/ fetch_unit__DOT__trailone_index_3__DOT__stage_index1_0;
         CData/*1:0*/ fetch_unit__DOT__trailone_index_3__DOT__stage_index1_1;
         CData/*1:0*/ fetch_unit__DOT__trailone_index_3__DOT__stage_index2_0;
         CData/*0:0*/ fetch_unit__DOT__trailone_index_3__DOT__empty;
+        CData/*1:0*/ fetch_unit__DOT__trailone_index_3__DOT__out_remap;
         CData/*0:0*/ fetch_unit__DOT__instr_push_valid_vec_popc__DOT__din_vld;
         CData/*3:0*/ fetch_unit__DOT__instr_push_valid_vec_popc__DOT__data_in;
         CData/*2:0*/ fetch_unit__DOT__instr_push_valid_vec_popc__DOT__cnt_out;
@@ -343,8 +372,6 @@ class Vtop___024root final : public VerilatedModule {
         CData/*2:0*/ fetch_unit__DOT__rvcDecompressor_2__DOT__tmp_ret_inst_3;
         CData/*2:0*/ fetch_unit__DOT__rvcDecompressor_2__DOT__tmp_ret_inst_4;
         CData/*6:0*/ fetch_unit__DOT__rvcDecompressor_2__DOT__tmp_ret_inst_5;
-    };
-    struct {
         CData/*4:0*/ fetch_unit__DOT__rvcDecompressor_2__DOT__tmp_ret_inst_6;
         CData/*0:0*/ fetch_unit__DOT__rvcDecompressor_2__DOT__tmp_ret_inst_7;
         CData/*4:0*/ fetch_unit__DOT__rvcDecompressor_2__DOT__tmp_ret_inst_8;
@@ -382,6 +409,8 @@ class Vtop___024root final : public VerilatedModule {
         CData/*0:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__tmp_addi16spImm;
         CData/*2:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__tmp_addi16spImm_1;
         CData/*0:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__tmp_jImm;
+    };
+    struct {
         CData/*0:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__tmp_bImm;
         CData/*4:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__tmp_bImm_1;
         CData/*4:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__x0;
@@ -409,8 +438,6 @@ class Vtop___024root final : public VerilatedModule {
         SData/*12:0*/ fetch_unit__DOT__rvcDecompressor_2__DOT__bImm;
         SData/*11:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__tmp_tmp_ret_inst;
         SData/*11:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__tmp_ret_inst_9;
-    };
-    struct {
         SData/*11:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__tmp_ret_inst_10;
         SData/*11:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__addi5spnImm;
         SData/*11:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__lwImm;
@@ -448,6 +475,8 @@ class Vtop___024root final : public VerilatedModule {
         IData/*31:0*/ fetch_unit__DOT__tmp_if2id_itf_1_instr_pc_2;
         IData/*31:0*/ fetch_unit__DOT__pc;
         IData/*31:0*/ fetch_unit__DOT__default_next_pc;
+    };
+    struct {
         IData/*31:0*/ fetch_unit__DOT__real_instr_0;
         IData/*31:0*/ fetch_unit__DOT__real_instr_1;
         IData/*31:0*/ fetch_unit__DOT__addressFifo__DOT__io_push_payload;
@@ -458,6 +487,8 @@ class Vtop___024root final : public VerilatedModule {
         IData/*31:0*/ fetch_unit__DOT__addressFifo__DOT__vec_1;
         IData/*31:0*/ fetch_unit__DOT__addressFifo__DOT__vec_2;
         IData/*31:0*/ fetch_unit__DOT__addressFifo__DOT__vec_3;
+        IData/*31:0*/ fetch_unit__DOT__addressFifo__DOT__vec_4;
+        IData/*31:0*/ fetch_unit__DOT__addressFifo__DOT__vec_5;
         IData/*31:0*/ fetch_unit__DOT__addressFifo__DOT__readed;
         IData/*31:0*/ fetch_unit__DOT__rvcDecompressor_2__DOT__i;
         IData/*31:0*/ fetch_unit__DOT__rvcDecompressor_2__DOT__decompInstr_inst;
@@ -475,8 +506,6 @@ class Vtop___024root final : public VerilatedModule {
         IData/*31:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__luiImm;
         IData/*20:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__jImm;
         IData/*31:0*/ fetch_unit__DOT__rvcDecompressor_3__DOT__tmp_ret_inst;
-    };
-    struct {
         IData/*31:0*/ __VstlIterCount;
         IData/*31:0*/ __VicoIterCount;
         IData/*31:0*/ __VactIterCount;
@@ -512,6 +541,8 @@ class Vtop___024root final : public VerilatedModule {
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_1;
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_2;
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_3;
+    };
+    struct {
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_4;
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_5;
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_6;
@@ -520,6 +551,8 @@ class Vtop___024root final : public VerilatedModule {
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_9;
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_10;
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_11;
+        QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_12;
+        QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__vec_13;
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__readedVec_0;
         QData/*32:0*/ fetch_unit__DOT__instrFifo__DOT__readedVec_1;
     };
