@@ -19,13 +19,15 @@ case class if2id_interface(val conf: Config) extends Bundle with IMasterSlave {
   val instr_data = Bits(conf.xlen bits)
   val instr_pc = UInt(32 bits)
   val valid = Bool()
-//  val isRvc = Bool()
+  val isRvc = if(conf.Rvc) Bool() else null
 
   override def asMaster(): Unit = {
     out(instr_data)
     out(instr_pc)
     out(valid)
-//    out(isRvc)
+    if(conf.Rvc){
+      out(isRvc)
+    }
   }
 }
 class fetch_unit(resetVec: BigInt = 0x0)(implicit conf: Config) extends Component {
@@ -222,11 +224,13 @@ class fetch_unit(resetVec: BigInt = 0x0)(implicit conf: Config) extends Componen
   val real_instr = Vec(Bits(32 bits),conf.DecoderWidth)
   val pc_step = Vec(UInt(3 bits), conf.DecoderWidth)
   if(conf.Rvc){
+    val isRvc = Vec(Bool(), conf.DecoderWidth)
     for (i <- 0 until conf.DecoderWidth) {
-      val instr_isRvc = instrFifo.io.pop(i).payload.msb
+      io.if2id_itf(i).isRvc := isRvc(i)
+      isRvc(i) := instrFifo.io.pop(i).payload.msb
       val decomp_instr = RvcDecompressor(rvf=conf.Rvf,rvd=conf.Rvd, xlen=conf.xlen, i=instrFifo.io.pop(i).payload(conf.xlen - 1 downto 0))
-      real_instr(i) := (instr_isRvc & ~decomp_instr.illegal) ? decomp_instr.inst | instrFifo.io.pop(i).payload(conf.xlen - 1 downto 0)
-      pc_step(i) := instr_isRvc ? U"3'd2" | U"3'd4"
+      real_instr(i) := (isRvc(i) & ~decomp_instr.illegal) ? decomp_instr.inst | instrFifo.io.pop(i).payload(conf.xlen - 1 downto 0)
+      pc_step(i) := isRvc(i) ? U"3'd2" | U"3'd4"
       pc_step_all(i+1) := pc_step_all(i) + pc_step(i)
     }
   }

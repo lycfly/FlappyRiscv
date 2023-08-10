@@ -89,15 +89,18 @@ object InstructionFormat {
   case object B extends InstructionFormat
   case object U extends InstructionFormat
   case object J extends InstructionFormat
+  case object CSRI extends InstructionFormat
 }
 
 /** Enum to specify the type of registers in InstructionType. New types can be added by calling
   * newElement(String) on the RegisterType object.
   */
 object RegisterType extends SpinalEnum {
-  val REGNONE, GPR = newElement()
+  val REGNONE, GPR, FPR, VR = newElement()
 }
-
+object RegisterSource extends SpinalEnum {
+  val REGISTER, IMM, PC, X0= newElement()
+}
 /** The InstructionType is a combination of an InstructionFormat and a specification of the type of
   * each register. The type of register is mainly used to resolve data hazards correctly. E.g., we
   * don't want to forward FP register values to GPR registers (this could happen since the RSx and
@@ -150,6 +153,13 @@ object InstructionType {
       extends InstructionType(
         InstructionFormat.J,
         RegisterType.REGNONE,
+        RegisterType.REGNONE,
+        RegisterType.GPR
+      )
+   case object CSRI
+      extends InstructionType(
+        InstructionFormat.CSRI,
+        RegisterType.GPR,
         RegisterType.REGNONE,
         RegisterType.GPR
       )

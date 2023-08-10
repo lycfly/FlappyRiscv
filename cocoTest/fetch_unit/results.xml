@@ -1,6 +1,6 @@
 <testsuites name="results">
   <testsuite name="all" package="all">
-    <property name="random_seed" value="1691129502" />
-    <testcase name="tb" classname="testbench" file="/home/lyc/projects/riscv/FlappyRiscv/cocoTest/fetch_unit/testbench.py" lineno="31" time="0.017816781997680664" sim_time_ns="121.001" ratio_time="6791.405991034271" />
+    <property name="random_seed" value="1691130206" />
+    <testcase name="tb" classname="testbench" file="/home/lyc/projects/riscv/FlappyRiscv/cocoTest/fetch_unit/testbench.py" lineno="31" time="0.017031192779541016" sim_time_ns="121.001" ratio_time="7104.669741355658" />
   </testsuite>
 </testsuites>

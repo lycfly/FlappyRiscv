@@ -24,11 +24,15 @@ object BaseIsa {
 
 class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
   def xlen = baseIsa.xlen
-  def numRegs = baseIsa.xlen
+  def ArchRegsNum = baseIsa.xlen
+  def PhysicalRegsNum: Int = 64
   def IMemWordWidth: Int = 64
   def FetchWidth: Int = 64
   def DecoderWidth: Int = 2
   def IssueWidth: Int = 2
+
+  def RvZicsr: Boolean = true
+  def Rvm: Boolean = true
   def Rvc: Boolean = true
   def Rvf: Boolean = false
   def Rvd: Boolean = false
