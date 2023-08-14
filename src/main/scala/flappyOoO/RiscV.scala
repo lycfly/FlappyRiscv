@@ -96,7 +96,7 @@ object InstructionFormat {
   * newElement(String) on the RegisterType object.
   */
 object RegisterType extends SpinalEnum {
-  val REGNONE, GPR, FPR, VR = newElement()
+  val GPR, FPR, VR, REGNONE = newElement()
 }
 object RegisterSource extends SpinalEnum {
   val REGISTER, IMM, PC, X0= newElement()

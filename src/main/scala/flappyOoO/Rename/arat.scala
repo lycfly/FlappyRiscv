@@ -22,6 +22,7 @@ class arat(implicit val conf: Config) extends Component {
   noIoPrefix()
   val rat_mem = Vec(UInt(log2Up(conf.PhysicalRegsNum) bits), conf.ArchRegsNum)
   rat_mem(0) := 0
+  rat_mem(0).allowPruning()
   for(i <- 1 until conf.ArchRegsNum){
     rat_mem(i).setAsReg().init(0)
   }
@@ -41,6 +42,7 @@ class arat(implicit val conf: Config) extends Component {
   }
 
   io.rat_out := rat_mem
+  io.rat_out(0).allowPruning()
 
 }
 

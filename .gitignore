@@ -37,6 +37,7 @@ bin/
 /simWorkspace/
 /tmp/
 cocoTest/*/sim_build/
+cocoTest/*/__*__/
 
 !.gitignore
 !.gitmodules

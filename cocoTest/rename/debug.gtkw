@@ -1,0 +1,135 @@
+[*]
+[*] GTKWave Analyzer v3.3.104 (w)1999-2020 BSI
+[*] Mon Aug 14 07:40:39 2023
+[*]
+[dumpfile] "/home/lyc/projects/riscv/FlappyRiscv/cocoTest/rename/dump.fst"
+[dumpfile_mtime] "Mon Aug 14 07:30:42 2023"
+[dumpfile_size] 6363
+[savefile] "/home/lyc/projects/riscv/FlappyRiscv/cocoTest/rename/debug.gtkw"
+[timestart] 5390
+[size] 1860 1016
+[pos] -1 -1
+*-13.000000 10260 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1 -1
+[treeopen] rename.
+[sst_width] 504
+[signals_width] 301
+[sst_expanded] 1
+[sst_vpaned_height] 280
+@28
+clk
+resetn
+rename.valid
+rename.ready
+@200
+-
+@28
+uop_0_rd_is_used
+uop_0_rd_kind[1:0]
+uop_0_rd_width[1:0]
+uop_0_rs1_is_used
+uop_0_rs1_kind[1:0]
+uop_0_rs1_source[1:0]
+uop_0_rs1_width[1:0]
+uop_0_rs2_is_used
+@c00028
+uop_0_rs2_kind[1:0]
+@28
+(0)uop_0_rs2_kind[1:0]
+(1)uop_0_rs2_kind[1:0]
+@1401200
+-group_end
+@28
+uop_0_rs2_source[1:0]
+uop_0_rs2_width[1:0]
+@200
+-
+@28
+uop_1_rd_is_used
+uop_1_rd_kind[1:0]
+uop_1_rd_width[1:0]
+uop_1_rs1_is_used
+uop_1_rs1_kind[1:0]
+uop_1_rs1_source[1:0]
+uop_1_rs1_width[1:0]
+uop_1_rs2_is_used
+uop_1_rs2_kind[1:0]
+uop_1_rs2_source[1:0]
+uop_1_rs2_width[1:0]
+@200
+-
+-Input
+@28
+valid
+@c00022
+[color] 2
+uop_0_rs1_index[4:0]
+@28
+(0)uop_0_rs1_index[4:0]
+(1)uop_0_rs1_index[4:0]
+(2)uop_0_rs1_index[4:0]
+(3)uop_0_rs1_index[4:0]
+(4)uop_0_rs1_index[4:0]
+@1401200
+-group_end
+@22
+[color] 2
+uop_0_rs2_index[4:0]
+[color] 2
+uop_0_rd_index[4:0]
+@200
+-
+@22
+[color] 2
+uop_1_rs1_index[4:0]
+[color] 2
+uop_1_rs2_index[4:0]
+[color] 2
+uop_1_rd_index[4:0]
+@200
+-
+-flist
+@28
+rename.flist.full
+rename.flist.empty
+@24
+rename.flist.occupancy[5:0]
+rename.flist.popPtrGlobal[5:0]
+[color] 3
+rename.flist.io_pop_0_payload[5:0]
+@28
+rename.flist.io_pop_0_ready
+rename.flist.io_pop_0_valid
+@24
+[color] 3
+rename.flist.io_pop_1_payload[5:0]
+@28
+rename.flist.io_pop_1_ready
+rename.flist.io_pop_1_valid
+@200
+-
+-srat
+@24
+rename.srat.rat_if_rd_read_0_payload[4:0]
+rename.srat.rat_if_rd_read_0_valid
+rename.srat.rat_if_rd_read_1_payload[4:0]
+rename.srat.rat_if_rd_read_1_valid
+rename.srat.rat_if_rd_write_0_payload[4:0]
+rename.srat.rat_if_rd_write_0_valid
+rename.srat.rat_if_rd_write_1_payload[4:0]
+rename.srat.rat_if_rd_write_1_valid
+@25
+[color] 3
+rename.srat.rat_if_rd_write_value_0[5:0]
+[color] 3
+rename.srat.rat_if_rd_write_value_1[5:0]
+@24
+rename.srat.rat_if_rs1_read_0_payload[4:0]
+rename.srat.rat_if_rs1_read_0_valid
+rename.srat.rat_if_rs1_read_1_payload[4:0]
+rename.srat.rat_if_rs1_read_1_valid
+rename.srat.rat_if_rs2_read_0_payload[4:0]
+rename.srat.rat_if_rs2_read_0_valid
+rename.srat.rat_if_rs2_read_1_payload[4:0]
+rename.srat.rat_if_rs2_read_1_valid
+[pattern_trace] 1
+[pattern_trace] 0

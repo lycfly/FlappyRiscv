@@ -7,9 +7,7 @@ import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
-
 import scala.util.Random
-import scala.language.postfixOps
 import spinal.core._
 import spinal.core.internals.Literal
 
@@ -57,10 +55,10 @@ case class rd_bundle(xlen: Int) extends Bundle {
 }
 
 
-case class micro_op_if(val conf: Config) extends Bundle {
-  val rs1 = rs_bundle(conf.ArchRegsNum)
-  val rs2 = rs_bundle(conf.ArchRegsNum)
-  val rd = rd_bundle(conf.ArchRegsNum)
+case class micro_op_if(val conf: Config, isPhysical:Boolean=false) extends Bundle {
+  val rs1 = if(isPhysical) rs_bundle(conf.PhysicalRegsNum) else rs_bundle(conf.ArchRegsNum)
+  val rs2 = if(isPhysical) rs_bundle(conf.PhysicalRegsNum) else rs_bundle(conf.ArchRegsNum)
+  val rd = if(isPhysical) rd_bundle(conf.PhysicalRegsNum) else rd_bundle(conf.ArchRegsNum)
   val imm = Bits(conf.xlen bits)
   val op = UOPs()
   val pc = UInt(32 bits)
@@ -262,7 +260,12 @@ case class decoder()(implicit conf: Config) extends Component {
   when(io.uop.rd.index === 0) {
     io.uop.rd.is_used := False
   }
-
+  when(io.uop.rs1.index === 0) {
+    io.uop.rs1.source := RegisterSource.X0
+  }
+  when(io.uop.rs2.index === 0) {
+    io.uop.rs2.source := RegisterSource.X0
+  }
 }
 
 object decoder_inst {

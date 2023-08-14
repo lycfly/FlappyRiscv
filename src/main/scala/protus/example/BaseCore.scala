@@ -112,51 +112,51 @@ object createDynamicPipeline {
       override val stages = issuePipeline.stages ++ unorderedStages :+ retirementStage
     }
 
-    pipeline.issuePipeline.addPlugins(
-      Seq(
-        new Scheduler(canStallExternally = true),
-        new PcManager(0x200L),
-        new tomasulo.DynamicMemoryBackbone(
-          pipeline.loadStages.size + 1
-        ), // +1 for write stage (which also uses an ID currently)
-        new Fetcher(pipeline.issuePipeline.fetch)
-      )
-    )
+    // pipeline.issuePipeline.addPlugins(
+    //   Seq(
+    //     new Scheduler(canStallExternally = true),
+    //     new PcManager(0x200L),
+    //     new tomasulo.DynamicMemoryBackbone(
+    //       pipeline.loadStages.size + 1
+    //     ), // +1 for write stage (which also uses an ID currently)
+    //     new Fetcher(pipeline.issuePipeline.fetch)
+    //   )
+    // )
 
-    pipeline.addPlugins(
-      Seq(
-        new Decoder(pipeline.issuePipeline.decode), // TODO: ugly alert!!
-        new tomasulo.Scheduler,
-        new tomasulo.PcManager,
-        new RegisterFileAccessor(
-          // FIXME this works since there is no delay between ID and dispatch. It would probably be
-          // safer to create an explicit dispatch stage in the dynamic pipeline and read the registers
-          // there. It could still be zero-delay of course.
-          readStage = pipeline.issuePipeline.decode,
-          writeStage = pipeline.retirementStage
-        ),
-        new Lsu(
-          Set(pipeline.intAlu1, pipeline.intAlu2, pipeline.intAlu3, pipeline.intAlu4),
-          pipeline.loadStages,
-          pipeline.retirementStage
-        ),
-        new BranchTargetPredictor(
-          pipeline.issuePipeline.fetch,
-          pipeline.retirementStage,
-          8,
-          conf.xlen
-        ),
-        new IntAlu(Set(pipeline.intAlu1, pipeline.intAlu2, pipeline.intAlu3, pipeline.intAlu4)),
-        new Shifter(Set(pipeline.intAlu1, pipeline.intAlu2, pipeline.intAlu3, pipeline.intAlu4)),
-        new MulDiv(Set(pipeline.intMul1)),
-        new BranchUnit(Set(pipeline.intAlu1, pipeline.intAlu2, pipeline.intAlu3, pipeline.intAlu4)),
-        new CsrFile(pipeline.retirementStage, pipeline.intAlu1),
-        new TrapHandler(pipeline.retirementStage),
-        new MachineMode(pipeline.intAlu1),
-    //    new Interrupts(pipeline.retirementStage),
-        new Timers
-      ) ++ extraPlugins
-    )
+    // pipeline.addPlugins(
+    //   Seq(
+    //     new Decoder(pipeline.issuePipeline.decode), // TODO: ugly alert!!
+    //     new tomasulo.Scheduler,
+    //     new tomasulo.PcManager,
+    //     new RegisterFileAccessor(
+    //       // FIXME this works since there is no delay between ID and dispatch. It would probably be
+    //       // safer to create an explicit dispatch stage in the dynamic pipeline and read the registers
+    //       // there. It could still be zero-delay of course.
+    //       readStage = pipeline.issuePipeline.decode,
+    //       writeStage = pipeline.retirementStage
+    //     ),
+    //     new Lsu(
+    //       Set(pipeline.intAlu1, pipeline.intAlu2, pipeline.intAlu3, pipeline.intAlu4),
+    //       pipeline.loadStages,
+    //       pipeline.retirementStage
+    //     ),
+    //     new BranchTargetPredictor(
+    //       pipeline.issuePipeline.fetch,
+    //       pipeline.retirementStage,
+    //       8,
+    //       conf.xlen
+    //     ),
+    //     new IntAlu(Set(pipeline.intAlu1, pipeline.intAlu2, pipeline.intAlu3, pipeline.intAlu4)),
+    //     new Shifter(Set(pipeline.intAlu1, pipeline.intAlu2, pipeline.intAlu3, pipeline.intAlu4)),
+    //     new MulDiv(Set(pipeline.intMul1)),
+    //     new BranchUnit(Set(pipeline.intAlu1, pipeline.intAlu2, pipeline.intAlu3, pipeline.intAlu4)),
+    //     new CsrFile(pipeline.retirementStage, pipeline.intAlu1),
+    //     new TrapHandler(pipeline.retirementStage),
+    //     new MachineMode(pipeline.intAlu1),
+    // //    new Interrupts(pipeline.retirementStage),
+    //     new Timers
+    //   ) ++ extraPlugins
+    // )
 
     if (build) {
       pipeline.build()

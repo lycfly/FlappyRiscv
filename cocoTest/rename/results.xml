@@ -1,0 +1,6 @@
+<testsuites name="results">
+  <testsuite name="all" package="all">
+    <property name="random_seed" value="1691998242" />
+    <testcase name="tb" classname="testbench" file="/home/lyc/projects/riscv/FlappyRiscv/cocoTest/rename/testbench.py" lineno="61" time="0.16547918319702148" sim_time_ns="1011.001" ratio_time="6109.535836881006" />
+  </testsuite>
+</testsuites>

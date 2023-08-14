@@ -9,7 +9,6 @@ import spinal.core.sim._
 import spinal.lib._
 
 import scala.util.Random
-import scala.language.postfixOps
 import EasonLib.CocoSim._
 
 object Instr_type extends SpinalEnum {
@@ -381,3 +380,5 @@ object ifetch_coco {
     }, workspacePath = workspacePath).doit()
   }
 }
+
+

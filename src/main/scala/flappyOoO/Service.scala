@@ -2,6 +2,19 @@ package flappyOoO
 
 import spinal.core._
 import spinal.lib._
+case class result_info(conf: Config) extends Bundle{
+  val valid = Bool()
+  val archIndex = UInt(log2Up(conf.ArchRegsNum) bits)
+  val phyIndex = UInt(log2Up(conf.PhysicalRegsNum) bits)
+  val oldPhyIndex = UInt(log2Up(conf.PhysicalRegsNum) bits)
+}
+case class retire_if(conf: Config) extends Bundle{
+  val ready = Vec(Bool(), conf.DecoderWidth)
+  val rdInfo = Vec(result_info(conf), conf.DecoderWidth)
+  val branch_error_restore = Bool()
+  val flist_restore = UInt(log2Up(conf.PhysicalRegsNum-1) bits)
+
+}
 
 class IdInfo[T <: Data](val dataType: HardType[T]) {
   def name: String = getClass.getSimpleName.takeWhile(_ != '$')

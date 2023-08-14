@@ -48,6 +48,7 @@ class rat(implicit val conf: Config) extends Component {
   noIoPrefix()
   val rat_mem = Vec(UInt(log2Up(conf.PhysicalRegsNum) bits), conf.ArchRegsNum)
   rat_mem(0) := 0
+  rat_mem(0).allowPruning()
   for(i <- 1 until conf.ArchRegsNum){
     rat_mem(i).setAsReg().init(0)
   }
@@ -87,6 +88,8 @@ class rat(implicit val conf: Config) extends Component {
       rat_mem(i) := io.arat_in(i)
     }
   }
+
+  io.arat_in(0).allowPruning()
 
 }
 

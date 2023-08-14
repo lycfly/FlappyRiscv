@@ -8,7 +8,6 @@ import spinal.core.sim._
 import spinal.lib._
 
 import scala.util.Random
-import scala.language.postfixOps
 import flappyOoO.{AluOp, AluSrc1Select, AluSrc2Select, Config, IdInfo, InstructionType, Opcodes, idInfo_Alu}
 import spinal.core._
 
