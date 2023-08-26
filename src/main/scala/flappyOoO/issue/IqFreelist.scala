@@ -1,4 +1,4 @@
-package flappyOoO.Rename
+package flappyOoO.issue
 
 import spinal.sim._
 import spinal.core._
@@ -8,21 +8,18 @@ import scala.util.Random
 import scala.language.postfixOps
 
 
-class freelist(val dataType: UInt,val pushNum: Int, val popNum: Int, val depth: Int,
-                                           useVec : Boolean = true, strict_full: Boolean = true, strict_empty: Boolean = true) extends Component {
+class IqFreelist(val dataType: UInt,val pushNum: Int, val popNum: Int, val depth: Int,
+               useVec : Boolean = true, strict_full: Boolean = true, strict_empty: Boolean = true) extends Component {
   require(depth >= 1)
   val io = new Bundle {
     val push = Vec(slave(Stream(dataType)), pushNum)
     val pop = Vec(master(Stream (dataType)), popNum)
     val flush = in Bool() default (False)
-    val pop_ptr_store = Vec(out UInt(log2Up(depth) bits), popNum)
-    val pop_ptr_restore = slave(Flow(UInt(log2Up(depth) bits)))
-
   }
   val occupancy = out UInt (log2Up(depth + 1) bit)
   val vec = useVec generate Vec(Reg(dataType), depth)
   val ram = !useVec generate Mem(dataType, depth)
-  val pushPtrGlobal = Reg(UInt(log2Up(depth+1) bits)) init(depth-1+1)  // init = depth-1, 0 is not used ,so depth-1+1
+  val pushPtrGlobal = Reg(UInt(log2Up(depth+1) bits)) init(depth-1)
   val popPtrGlobal = Reg(UInt(log2Up(depth+1) bits)) init(0)
   val ptrMatch = pushPtrGlobal === popPtrGlobal
   val risingOccupancy = RegInit(False)
@@ -37,9 +34,9 @@ class freelist(val dataType: UInt,val pushNum: Int, val popNum: Int, val depth: 
   val dec_num = popping_vec.sCount(True)
 
   for(i <- 0 until depth){
-    vec(i).init(U(i+1))
+    vec(i).init(U(i))
     when(io.flush){
-      vec(i) := U(i+1)
+      vec(i) := U(i)
     }
   }
 
@@ -72,7 +69,6 @@ class freelist(val dataType: UInt,val pushNum: Int, val popNum: Int, val depth: 
     }.otherwise {
       popPtrs(i) := popPtrs_inc(i)
     }
-    io.pop_ptr_store(i) := popPtrs(i)(log2Up(depth)-1 downto 0)
   }
   val readedVec = Vec(for(i <- 0 until popNum) yield {
     if(useVec) vec(popPtrs(i)(log2Up(depth)-1 downto 0))
@@ -116,9 +112,7 @@ class freelist(val dataType: UInt,val pushNum: Int, val popNum: Int, val depth: 
     }
   }
 
-  when(io.pop_ptr_restore.valid){
-    popPtrGlobal := io.pop_ptr_restore.payload.resized
-  }.elsewhen(dec_num =/= 0) {
+  when(dec_num =/= 0) {
     when(popPtrGlobalInc >= depth){
       popPtrGlobal := (popPtrGlobalInc - depth).resized
     }.otherwise{
@@ -128,7 +122,7 @@ class freelist(val dataType: UInt,val pushNum: Int, val popNum: Int, val depth: 
 
   val ptrDif = pushPtrGlobal - popPtrGlobal
   if (isPow2(depth))
-    occupancy := ((risingOccupancy && ptrMatch) ## ptrDif).asUInt
+    occupancy := ((risingOccupancy && ptrMatch) ## ptrDif(log2Up(depth)-1 downto 0)).asUInt
   else {
     when(ptrMatch) {
       occupancy := Mux(risingOccupancy, U(depth), U(0))
@@ -144,7 +138,7 @@ class freelist(val dataType: UInt,val pushNum: Int, val popNum: Int, val depth: 
   }
 }
 
-object freelist_inst {
+object IqFreelist_inst {
   def main(args: Array[String]): Unit = {
     SpinalConfig(
       defaultConfigForClockDomains = ClockDomainConfig(resetKind = ASYNC,
@@ -158,6 +152,6 @@ object freelist_inst {
       anonymSignalPrefix = "tmp",
       targetDirectory = "rtl_gen")
       .addStandardMemBlackboxing(blackboxAll)
-      .generate(new freelist(UInt(6 bits),2,2,63))
+      .generate(new IqFreelist(UInt(log2Up(8) bits),2,2,8))
   }.printPruned()
 }

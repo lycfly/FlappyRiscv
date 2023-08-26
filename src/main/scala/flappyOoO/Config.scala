@@ -30,17 +30,46 @@ class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
   def FetchWidth: Int = 64
   def DecoderWidth: Int = 2
   def IssueWidth: Int = 2
+  def IqEntryNum: Int = 8
+  def RobEntryNum: Int = 8
+  def ClusterNum: Int = IssueWidth
+  def MaxInstrCycles = 32
+
+  def clusters = Array(
+    Array(FU_TYPE.ALU, FU_TYPE.BRU, FU_TYPE.MUL, FU_TYPE.CSR, FU_TYPE.LSU, FU_TYPE.BIT), // cluster 0
+    Array(FU_TYPE.ALU), // cluster 1
+  )
 
   def RvZicsr: Boolean = true
   def Rvm: Boolean = true
   def Rvc: Boolean = true
   def Rvf: Boolean = false
   def Rvd: Boolean = false
+
+
   object FetchConfig{
     def FetchAddrBuffDepth = 6
 //    def FetchInstrBuffDepth = 12
     def FetchInstrBuffWaterline = 6
   }
+  object Loader {
+    def cycles_fixed: Int = 2
+    def cycles_unknown: Int = 0
+  }
+  object Multiplier {
+    def cycles_comb: Int = 1
+    def cycles_radix2 = xlen + 1
+
+    def cycles_radix4 = xlen / 2 + 1
+
+    def cycles_radix8 = xlen / 4 + 1
+  }
+  object Divider{
+    def cycles_radix2 = xlen+1
+    def cycles_radix4 = xlen/2+1
+    def cycles_radix8 = xlen/4+1
+  }
+
 
   def ibusConfig = MemBusConfig(
     addressWidth = baseIsa.xlen,

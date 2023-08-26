@@ -10,8 +10,8 @@ import spinal.lib._
 import scala.language.postfixOps
 
 case class dispatch_rob_if(conf: Config) extends Bundle{
-  val flist_popptr_store = Vec(Flow(UInt(log2Up(conf.PhysicalRegsNum) bits)),conf.DecoderWidth)
-  val rdInfo = Vec(result_info(conf),conf.DecoderWidth)
+  val flist_popptr_store = Flow(UInt(log2Up(conf.PhysicalRegsNum) bits))
+  val rdInfo = result_info(conf)
 }
 
 class rename(implicit conf: Config) extends Component {
@@ -21,10 +21,20 @@ class rename(implicit conf: Config) extends Component {
     val flush = in Bool()
 //    val recovery = in Bool()
     val uop = Vec(in(micro_op_if(conf)), conf.DecoderWidth)
-    val dispRob = out(dispatch_rob_if(conf))
+    val dispRob = Vec(out(dispatch_rob_if(conf)),conf.DecoderWidth)
     val retired = in(retire_if(conf))
     val uopRenamed = Vec(out(micro_op_if(conf, isPhysical = true)), conf.DecoderWidth)
 
+  }
+  def connect_uop(bundle_in: Bundle, bundle_out: Bundle) = {
+    for((in,out) <- bundle_in.flatten.zip(bundle_out.flatten)){
+      if(out.getBitsWidth == in.getBitsWidth){
+        out := in
+      }
+      else{
+        out := in.resized
+      }
+    }
   }
   noIoPrefix()
   val srat = new rat()
@@ -55,10 +65,10 @@ class rename(implicit conf: Config) extends Component {
   for(i <- 0 until conf.DecoderWidth){
     var is_jump_list = Vec(for(x <- Array(UOPs.JAL, UOPs.JALR, UOPs.BEQ, UOPs.BNE, UOPs.BLT, UOPs.BGE, UOPs.BLTU, UOPs.BGEU)) yield (io.uop(i).op === x))
     is_branch(i) := is_jump_list.reduce(_ && _)
-    io.dispRob.flist_popptr_store(i).payload := 0
-    io.dispRob.flist_popptr_store(i).valid := False
+    io.dispRob(i).flist_popptr_store.payload := 0
+    io.dispRob(i).flist_popptr_store.valid := False
     when(is_branch(i)) {
-      io.dispRob.flist_popptr_store(i).push(flist.io.pop_ptr_store(i))
+      io.dispRob(i).flist_popptr_store.push(flist.io.pop_ptr_store(i))
     }
     // flist to srat
     flist.io.pop(i).ready := srat.io.rat_if.rd_read(i).valid & io.ready
@@ -75,10 +85,10 @@ class rename(implicit conf: Config) extends Component {
     arat.io.rd_write(i).payload := io.retired.rdInfo(i).archIndex
     arat.io.rd_write_value(i) := io.retired.rdInfo(i).phyIndex
 
-    io.dispRob.rdInfo(i).valid := srat.io.rat_if.rd_read(i).valid
-    io.dispRob.rdInfo(i).archIndex := io.uop(i).rd.index
-    io.dispRob.rdInfo(i).phyIndex := flist.io.pop(i).payload
-    io.dispRob.rdInfo(i).oldPhyIndex := oldPhyIndex(i)
+    io.dispRob(i).rdInfo.valid := srat.io.rat_if.rd_read(i).valid
+    io.dispRob(i).rdInfo.archIndex := io.uop(i).rd.index
+    io.dispRob(i).rdInfo.phyIndex := flist.io.pop(i).payload
+    io.dispRob(i).rdInfo.oldPhyIndex := oldPhyIndex(i)
   }
   // ROB restore to flist
   flist.io.pop_ptr_restore.payload := io.retired.flist_restore
@@ -86,23 +96,30 @@ class rename(implicit conf: Config) extends Component {
 
   // RAW check
   for(i <- 0 until conf.DecoderWidth){  //default
-    io.uopRenamed(i).op := io.uop(i).op
-    io.uopRenamed(i).imm := io.uop(i).imm
-    io.uopRenamed(i).pc := io.uop(i).pc
+//    io.uopRenamed(i).op := io.uop(i).op
+//    io.uopRenamed(i).imm := io.uop(i).imm
+//    io.uopRenamed(i).pc := io.uop(i).pc
+//    io.uopRenamed(i).rs1.is_used := srat.io.rat_if.phy_rs1(i).valid
+//    io.uopRenamed(i).rs1.kind := io.uop(i).rs1.kind
+//    io.uopRenamed(i).rs1.source := io.uop(i).rs1.source
+//    io.uopRenamed(i).rs1.width := io.uop(i).rs1.width
+//    io.uopRenamed(i).rs2.is_used := srat.io.rat_if.phy_rs2(i).valid
+//    io.uopRenamed(i).rs2.kind := io.uop(i).rs2.kind
+//    io.uopRenamed(i).rs2.source := io.uop(i).rs2.source
+//    io.uopRenamed(i).rs2.width := io.uop(i).rs2.width
+//    io.uopRenamed(i).rd.is_used := srat.io.rat_if.phy_rd(i).valid
+//    io.uopRenamed(i).rd.kind := io.uop(i).rd.kind
+//    io.uopRenamed(i).rd.width := io.uop(i).rd.width
+//    io.uopRenamed(i).rs1.index := srat.io.rat_if.phy_rs1(i).payload
+//    io.uopRenamed(i).rs2.index := srat.io.rat_if.phy_rs2(i).payload
+//    io.uopRenamed(i).rd.index := flist.io.pop(i).payload
+    connect_uop(bundle_in = io.uop(i), bundle_out = io.uopRenamed(i))
+    io.uopRenamed(i).flatten.foreach(_.allowOverride)
     io.uopRenamed(i).rs1.is_used := srat.io.rat_if.phy_rs1(i).valid
-    io.uopRenamed(i).rs1.kind := io.uop(i).rs1.kind
-    io.uopRenamed(i).rs1.source := io.uop(i).rs1.source
-    io.uopRenamed(i).rs1.width := io.uop(i).rs1.width
     io.uopRenamed(i).rs2.is_used := srat.io.rat_if.phy_rs2(i).valid
-    io.uopRenamed(i).rs2.kind := io.uop(i).rs2.kind
-    io.uopRenamed(i).rs2.source := io.uop(i).rs2.source
-    io.uopRenamed(i).rs2.width := io.uop(i).rs2.width
     io.uopRenamed(i).rd.is_used := srat.io.rat_if.phy_rd(i).valid
-    io.uopRenamed(i).rd.kind := io.uop(i).rd.kind
-    io.uopRenamed(i).rd.width := io.uop(i).rd.width
     io.uopRenamed(i).rs1.index := srat.io.rat_if.phy_rs1(i).payload
     io.uopRenamed(i).rs2.index := srat.io.rat_if.phy_rs2(i).payload
-    io.uopRenamed(i).rd.index := flist.io.pop(i).payload
 
     srat_rd_write_enable(i) := flist.io.pop(i).fire
     srat_rd_write_value(i) := flist.io.pop(i).payload

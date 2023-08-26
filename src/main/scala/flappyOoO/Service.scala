@@ -2,6 +2,39 @@ package flappyOoO
 
 import spinal.core._
 import spinal.lib._
+
+object FU_TYPE extends SpinalEnum {
+  val ALU, MUL, LSU, BRU, CSR, BIT = newElement()
+}
+case class Pipe() extends Bundle {
+  val isValid = in Bool ()
+  val isStalled = in Bool ()
+  val isReady = out Bool ()
+  val isDone = out Bool ()
+  /** Is this stage currently idling?
+    *
+    * True when there either is no instruction in the current stage or it is stalled. When
+    * implementing a multi-cycle stage operation, make sure to reset the internal state machine when
+    * this signal is high.
+    */
+  def isIdle: Bool = !isValid || isStalled
+
+  /** Is this stage currently processing an instruction?
+    *
+    * True when there is a valid instruction that is not stalled in the current stage. Use in stage
+    * logic to know when to process an instruction.
+    */
+  def isRunning: Bool = !isIdle
+
+  val isAvailable = out Bool ()
+  isAvailable := !isValid || isDone
+
+  isReady := True
+  isReady.allowOverride
+
+  isDone := isValid && isReady && !isStalled
+}
+
 case class result_info(conf: Config) extends Bundle{
   val valid = Bool()
   val archIndex = UInt(log2Up(conf.ArchRegsNum) bits)

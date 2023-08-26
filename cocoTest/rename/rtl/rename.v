@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.9.0    git head : 7d30dbacbd3aa1be42fb2a3d4da5675703aae2ae
 // Component : rename
-// Git hash  : b4c6ae4f065b1a8ff5aa3c65c18f66892b8899f9
+// Git hash  : 961ad7840b694b81aa875b1d1fb23dd3f7cdcb9e
 
 `timescale 1ns/1ps
 
@@ -25,6 +25,7 @@ module rename (
   input      [31:0]   uop_0_imm,
   input      [4:0]    uop_0_op,
   input      [31:0]   uop_0_pc,
+  input      [4:0]    uop_0_cycles,
   input               uop_1_rs1_is_used,
   input      [1:0]    uop_1_rs1_source,
   input      [1:0]    uop_1_rs1_kind,
@@ -42,18 +43,19 @@ module rename (
   input      [31:0]   uop_1_imm,
   input      [4:0]    uop_1_op,
   input      [31:0]   uop_1_pc,
-  output reg          dispRob_flist_popptr_store_0_valid,
-  output reg [5:0]    dispRob_flist_popptr_store_0_payload,
-  output reg          dispRob_flist_popptr_store_1_valid,
-  output reg [5:0]    dispRob_flist_popptr_store_1_payload,
-  output              dispRob_rdInfo_0_valid,
-  output     [4:0]    dispRob_rdInfo_0_archIndex,
-  output     [5:0]    dispRob_rdInfo_0_phyIndex,
-  output     [5:0]    dispRob_rdInfo_0_oldPhyIndex,
-  output              dispRob_rdInfo_1_valid,
-  output     [4:0]    dispRob_rdInfo_1_archIndex,
-  output     [5:0]    dispRob_rdInfo_1_phyIndex,
-  output     [5:0]    dispRob_rdInfo_1_oldPhyIndex,
+  input      [4:0]    uop_1_cycles,
+  output reg          dispRob_0_flist_popptr_store_valid,
+  output reg [5:0]    dispRob_0_flist_popptr_store_payload,
+  output              dispRob_0_rdInfo_valid,
+  output     [4:0]    dispRob_0_rdInfo_archIndex,
+  output     [5:0]    dispRob_0_rdInfo_phyIndex,
+  output     [5:0]    dispRob_0_rdInfo_oldPhyIndex,
+  output reg          dispRob_1_flist_popptr_store_valid,
+  output reg [5:0]    dispRob_1_flist_popptr_store_payload,
+  output              dispRob_1_rdInfo_valid,
+  output     [4:0]    dispRob_1_rdInfo_archIndex,
+  output     [5:0]    dispRob_1_rdInfo_phyIndex,
+  output     [5:0]    dispRob_1_rdInfo_oldPhyIndex,
   input               retired_ready_0,
   input               retired_ready_1,
   input               retired_rdInfo_0_valid,
@@ -66,40 +68,42 @@ module rename (
   input      [5:0]    retired_rdInfo_1_oldPhyIndex,
   input               retired_branch_error_restore,
   input      [5:0]    retired_flist_restore,
-  output              uopRenamed_0_rs1_is_used,
+  output reg          uopRenamed_0_rs1_is_used,
   output     [1:0]    uopRenamed_0_rs1_source,
   output     [1:0]    uopRenamed_0_rs1_kind,
   output     [1:0]    uopRenamed_0_rs1_width,
-  output     [5:0]    uopRenamed_0_rs1_index,
-  output              uopRenamed_0_rs2_is_used,
+  output reg [5:0]    uopRenamed_0_rs1_index,
+  output reg          uopRenamed_0_rs2_is_used,
   output     [1:0]    uopRenamed_0_rs2_source,
   output     [1:0]    uopRenamed_0_rs2_kind,
   output     [1:0]    uopRenamed_0_rs2_width,
-  output     [5:0]    uopRenamed_0_rs2_index,
-  output              uopRenamed_0_rd_is_used,
+  output reg [5:0]    uopRenamed_0_rs2_index,
+  output reg          uopRenamed_0_rd_is_used,
   output     [1:0]    uopRenamed_0_rd_kind,
   output     [1:0]    uopRenamed_0_rd_width,
   output     [5:0]    uopRenamed_0_rd_index,
   output     [31:0]   uopRenamed_0_imm,
   output     [4:0]    uopRenamed_0_op,
   output     [31:0]   uopRenamed_0_pc,
-  output              uopRenamed_1_rs1_is_used,
+  output     [4:0]    uopRenamed_0_cycles,
+  output reg          uopRenamed_1_rs1_is_used,
   output     [1:0]    uopRenamed_1_rs1_source,
   output     [1:0]    uopRenamed_1_rs1_kind,
   output     [1:0]    uopRenamed_1_rs1_width,
   output reg [5:0]    uopRenamed_1_rs1_index,
-  output              uopRenamed_1_rs2_is_used,
+  output reg          uopRenamed_1_rs2_is_used,
   output     [1:0]    uopRenamed_1_rs2_source,
   output     [1:0]    uopRenamed_1_rs2_kind,
   output     [1:0]    uopRenamed_1_rs2_width,
   output reg [5:0]    uopRenamed_1_rs2_index,
-  output              uopRenamed_1_rd_is_used,
+  output reg          uopRenamed_1_rd_is_used,
   output     [1:0]    uopRenamed_1_rd_kind,
   output     [1:0]    uopRenamed_1_rd_width,
   output     [5:0]    uopRenamed_1_rd_index,
   output     [31:0]   uopRenamed_1_imm,
   output     [4:0]    uopRenamed_1_op,
   output     [31:0]   uopRenamed_1_pc,
+  output     [4:0]    uopRenamed_1_cycles,
   input               clk,
   input               resetn
 );
@@ -781,65 +785,86 @@ module rename (
   assign srat_rat_if_rd_read_1_valid = ((valid && uop_1_rd_is_used) && (uop_1_rd_kind == GPR));
   assign is_branch_0 = ((((((((uop_0_op == JAL) && (uop_0_op == JALR)) && (uop_0_op == BEQ)) && (uop_0_op == BNE)) && (uop_0_op == BLT)) && (uop_0_op == BGE)) && (uop_0_op == BLTU)) && (uop_0_op == BGEU));
   always @(*) begin
-    dispRob_flist_popptr_store_0_payload = 6'h00;
+    dispRob_0_flist_popptr_store_payload = 6'h00;
     if(is_branch_0) begin
-      dispRob_flist_popptr_store_0_payload = flist_io_pop_ptr_store_0;
+      dispRob_0_flist_popptr_store_payload = flist_io_pop_ptr_store_0;
     end
   end
 
   always @(*) begin
-    dispRob_flist_popptr_store_0_valid = 1'b0;
+    dispRob_0_flist_popptr_store_valid = 1'b0;
     if(is_branch_0) begin
-      dispRob_flist_popptr_store_0_valid = 1'b1;
+      dispRob_0_flist_popptr_store_valid = 1'b1;
     end
   end
 
   assign flist_io_pop_0_ready = (srat_rat_if_rd_read_0_valid && ready);
   assign flist_io_push_0_valid = (retired_rdInfo_0_valid && retired_ready_0);
   assign arat_1_rd_write_0_valid = (retired_rdInfo_0_valid && retired_ready_0);
-  assign dispRob_rdInfo_0_valid = srat_rat_if_rd_read_0_valid;
-  assign dispRob_rdInfo_0_archIndex = uop_0_rd_index;
-  assign dispRob_rdInfo_0_phyIndex = flist_io_pop_0_payload;
-  assign dispRob_rdInfo_0_oldPhyIndex = oldPhyIndex_0;
+  assign dispRob_0_rdInfo_valid = srat_rat_if_rd_read_0_valid;
+  assign dispRob_0_rdInfo_archIndex = uop_0_rd_index;
+  assign dispRob_0_rdInfo_phyIndex = flist_io_pop_0_payload;
+  assign dispRob_0_rdInfo_oldPhyIndex = oldPhyIndex_0;
   assign is_branch_1 = ((((((((uop_1_op == JAL) && (uop_1_op == JALR)) && (uop_1_op == BEQ)) && (uop_1_op == BNE)) && (uop_1_op == BLT)) && (uop_1_op == BGE)) && (uop_1_op == BLTU)) && (uop_1_op == BGEU));
   always @(*) begin
-    dispRob_flist_popptr_store_1_payload = 6'h00;
+    dispRob_1_flist_popptr_store_payload = 6'h00;
     if(is_branch_1) begin
-      dispRob_flist_popptr_store_1_payload = flist_io_pop_ptr_store_1;
+      dispRob_1_flist_popptr_store_payload = flist_io_pop_ptr_store_1;
     end
   end
 
   always @(*) begin
-    dispRob_flist_popptr_store_1_valid = 1'b0;
+    dispRob_1_flist_popptr_store_valid = 1'b0;
     if(is_branch_1) begin
-      dispRob_flist_popptr_store_1_valid = 1'b1;
+      dispRob_1_flist_popptr_store_valid = 1'b1;
     end
   end
 
   assign flist_io_pop_1_ready = (srat_rat_if_rd_read_1_valid && ready);
   assign flist_io_push_1_valid = (retired_rdInfo_1_valid && retired_ready_1);
   assign arat_1_rd_write_1_valid = (retired_rdInfo_1_valid && retired_ready_1);
-  assign dispRob_rdInfo_1_valid = srat_rat_if_rd_read_1_valid;
-  assign dispRob_rdInfo_1_archIndex = uop_1_rd_index;
-  assign dispRob_rdInfo_1_phyIndex = flist_io_pop_1_payload;
-  assign dispRob_rdInfo_1_oldPhyIndex = oldPhyIndex_1;
-  assign uopRenamed_0_op = uop_0_op;
-  assign uopRenamed_0_imm = uop_0_imm;
-  assign uopRenamed_0_pc = uop_0_pc;
-  assign uopRenamed_0_rs1_is_used = srat_rat_if_phy_rs1_0_valid;
-  assign uopRenamed_0_rs1_kind = uop_0_rs1_kind;
+  assign dispRob_1_rdInfo_valid = srat_rat_if_rd_read_1_valid;
+  assign dispRob_1_rdInfo_archIndex = uop_1_rd_index;
+  assign dispRob_1_rdInfo_phyIndex = flist_io_pop_1_payload;
+  assign dispRob_1_rdInfo_oldPhyIndex = oldPhyIndex_1;
+  always @(*) begin
+    uopRenamed_0_rs1_is_used = uop_0_rs1_is_used;
+    uopRenamed_0_rs1_is_used = srat_rat_if_phy_rs1_0_valid;
+  end
+
   assign uopRenamed_0_rs1_source = uop_0_rs1_source;
+  assign uopRenamed_0_rs1_kind = uop_0_rs1_kind;
   assign uopRenamed_0_rs1_width = uop_0_rs1_width;
-  assign uopRenamed_0_rs2_is_used = srat_rat_if_phy_rs2_0_valid;
-  assign uopRenamed_0_rs2_kind = uop_0_rs2_kind;
+  always @(*) begin
+    uopRenamed_0_rs1_index = {1'd0, uop_0_rs1_index};
+    uopRenamed_0_rs1_index = srat_rat_if_phy_rs1_0_payload;
+  end
+
+  always @(*) begin
+    uopRenamed_0_rs2_is_used = uop_0_rs2_is_used;
+    uopRenamed_0_rs2_is_used = srat_rat_if_phy_rs2_0_valid;
+  end
+
   assign uopRenamed_0_rs2_source = uop_0_rs2_source;
+  assign uopRenamed_0_rs2_kind = uop_0_rs2_kind;
   assign uopRenamed_0_rs2_width = uop_0_rs2_width;
-  assign uopRenamed_0_rd_is_used = srat_rat_if_phy_rd_0_valid;
+  always @(*) begin
+    uopRenamed_0_rs2_index = {1'd0, uop_0_rs2_index};
+    uopRenamed_0_rs2_index = srat_rat_if_phy_rs2_0_payload;
+  end
+
+  always @(*) begin
+    uopRenamed_0_rd_is_used = uop_0_rd_is_used;
+    uopRenamed_0_rd_is_used = srat_rat_if_phy_rd_0_valid;
+  end
+
   assign uopRenamed_0_rd_kind = uop_0_rd_kind;
   assign uopRenamed_0_rd_width = uop_0_rd_width;
-  assign uopRenamed_0_rs1_index = srat_rat_if_phy_rs1_0_payload;
-  assign uopRenamed_0_rs2_index = srat_rat_if_phy_rs2_0_payload;
-  assign uopRenamed_0_rd_index = flist_io_pop_0_payload;
+  assign uopRenamed_0_rd_index = {1'd0, uop_0_rd_index};
+  assign uopRenamed_0_imm = uop_0_imm;
+  assign uopRenamed_0_op = uop_0_op;
+  assign uopRenamed_0_pc = uop_0_pc;
+  assign uopRenamed_0_cycles = uop_0_cycles;
   assign toplevel_flist_io_pop_0_fire = (flist_io_pop_0_valid && flist_io_pop_0_ready);
   always @(*) begin
     srat_rd_write_enable_0 = toplevel_flist_io_pop_0_fire;
@@ -850,21 +875,16 @@ module rename (
 
   assign srat_rd_write_value_0 = flist_io_pop_0_payload;
   assign oldPhyIndex_0 = srat_rat_if_phy_rd_0_payload;
-  assign uopRenamed_1_op = uop_1_op;
-  assign uopRenamed_1_imm = uop_1_imm;
-  assign uopRenamed_1_pc = uop_1_pc;
-  assign uopRenamed_1_rs1_is_used = srat_rat_if_phy_rs1_1_valid;
-  assign uopRenamed_1_rs1_kind = uop_1_rs1_kind;
-  assign uopRenamed_1_rs1_source = uop_1_rs1_source;
-  assign uopRenamed_1_rs1_width = uop_1_rs1_width;
-  assign uopRenamed_1_rs2_is_used = srat_rat_if_phy_rs2_1_valid;
-  assign uopRenamed_1_rs2_kind = uop_1_rs2_kind;
-  assign uopRenamed_1_rs2_source = uop_1_rs2_source;
-  assign uopRenamed_1_rs2_width = uop_1_rs2_width;
-  assign uopRenamed_1_rd_is_used = srat_rat_if_phy_rd_1_valid;
-  assign uopRenamed_1_rd_kind = uop_1_rd_kind;
-  assign uopRenamed_1_rd_width = uop_1_rd_width;
   always @(*) begin
+    uopRenamed_1_rs1_is_used = uop_1_rs1_is_used;
+    uopRenamed_1_rs1_is_used = srat_rat_if_phy_rs1_1_valid;
+  end
+
+  assign uopRenamed_1_rs1_source = uop_1_rs1_source;
+  assign uopRenamed_1_rs1_kind = uop_1_rs1_kind;
+  assign uopRenamed_1_rs1_width = uop_1_rs1_width;
+  always @(*) begin
+    uopRenamed_1_rs1_index = {1'd0, uop_1_rs1_index};
     uopRenamed_1_rs1_index = srat_rat_if_phy_rs1_1_payload;
     if((uop_1_rs1_index == uop_0_rd_index)) begin
       uopRenamed_1_rs1_index = uopRenamed_1_rd_index;
@@ -872,13 +892,33 @@ module rename (
   end
 
   always @(*) begin
+    uopRenamed_1_rs2_is_used = uop_1_rs2_is_used;
+    uopRenamed_1_rs2_is_used = srat_rat_if_phy_rs2_1_valid;
+  end
+
+  assign uopRenamed_1_rs2_source = uop_1_rs2_source;
+  assign uopRenamed_1_rs2_kind = uop_1_rs2_kind;
+  assign uopRenamed_1_rs2_width = uop_1_rs2_width;
+  always @(*) begin
+    uopRenamed_1_rs2_index = {1'd0, uop_1_rs2_index};
     uopRenamed_1_rs2_index = srat_rat_if_phy_rs2_1_payload;
     if((uop_1_rs2_index == uop_0_rd_index)) begin
       uopRenamed_1_rs2_index = uopRenamed_1_rd_index;
     end
   end
 
-  assign uopRenamed_1_rd_index = flist_io_pop_1_payload;
+  always @(*) begin
+    uopRenamed_1_rd_is_used = uop_1_rd_is_used;
+    uopRenamed_1_rd_is_used = srat_rat_if_phy_rd_1_valid;
+  end
+
+  assign uopRenamed_1_rd_kind = uop_1_rd_kind;
+  assign uopRenamed_1_rd_width = uop_1_rd_width;
+  assign uopRenamed_1_rd_index = {1'd0, uop_1_rd_index};
+  assign uopRenamed_1_imm = uop_1_imm;
+  assign uopRenamed_1_op = uop_1_op;
+  assign uopRenamed_1_pc = uop_1_pc;
+  assign uopRenamed_1_cycles = uop_1_cycles;
   assign toplevel_flist_io_pop_1_fire = (flist_io_pop_1_valid && flist_io_pop_1_ready);
   assign srat_rd_write_enable_1 = toplevel_flist_io_pop_1_fire;
   assign srat_rd_write_value_1 = flist_io_pop_1_payload;
