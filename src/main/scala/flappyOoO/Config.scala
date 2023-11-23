@@ -1,5 +1,6 @@
 package flappyOoO
 
+import EasonLib.Arithmetic.SignMultiplier
 import flappyOoO.BaseIsa.RV32I
 
 sealed trait BaseIsa {
@@ -22,7 +23,7 @@ object BaseIsa {
   }
 }
 
-class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
+case class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
   def xlen = baseIsa.xlen
   def ArchRegsNum = baseIsa.xlen
   def PhysicalRegsNum: Int = 64
@@ -34,6 +35,9 @@ class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
   def RobEntryNum: Int = 8
   def ClusterNum: Int = IssueWidth
   def MaxInstrCycles = 32
+
+  def MultiplierType = "comb"
+  def DividerType = "radix4"
 
   def clusters = Array(
     Array(FU_TYPE.ALU, FU_TYPE.BRU, FU_TYPE.MUL, FU_TYPE.CSR, FU_TYPE.LSU, FU_TYPE.BIT), // cluster 0
@@ -57,17 +61,19 @@ class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
     def cycles_unknown: Int = 0
   }
   object Multiplier {
-    def cycles_comb: Int = 1
-    def cycles_radix2 = xlen + 1
 
-    def cycles_radix4 = xlen / 2 + 1
-
-    def cycles_radix8 = xlen / 4 + 1
+    val cands = Map("comb" -> Map("delay" -> 1, "inst" -> (new SignMultiplier(xlen, xlen, withOutReg = true))),
+                    "radix2" -> Map("delay" -> (xlen + 1)),
+                    "radix4" -> Map("delay" -> (xlen/2 + 1)),
+                    "radix8" -> Map("delay" -> (xlen/3 + 1))
+    )
   }
   object Divider{
-    def cycles_radix2 = xlen+1
-    def cycles_radix4 = xlen/2+1
-    def cycles_radix8 = xlen/4+1
+    val cands = Map("comb" -> Map("delay" -> 1),
+      "radix2" -> Map("delay" -> (xlen + 1)),
+      "radix4" -> Map("delay" -> (xlen / 2 + 1)),
+      "radix8" -> Map("delay" -> (xlen / 3 + 1))
+    )
   }
 
 

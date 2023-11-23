@@ -1,5 +1,6 @@
 package flappyOoO.Decode
 
+import EasonLib.Utils.Enum.EasonEnum
 import flappyOoO.BaseIsa.RV32I
 import flappyOoO.Frontend.if2id_interface
 import flappyOoO.{AccessWidth, Config, FU_TYPE, InstructionFormat, InstructionType, Opcodes, RegisterSource, RegisterType, Utils}
@@ -14,7 +15,7 @@ import spinal.core.internals.Literal
 
 import scala.collection.mutable
 
-object UOPs extends SpinalEnum {
+object UOPs extends EasonEnum {
   val IDLE, ADD, SUB, SLT, SLTU, AND, OR, XOR = newElement()
   val SLL, SRL, SRA = newElement()
   val LOAD, LOADU, STORE = newElement()
@@ -24,6 +25,7 @@ object UOPs extends SpinalEnum {
   //  val ANDN, CLZ, CPOP, CTZ, MAX, MAXU, MIN, MINU, ORC_B, ORN, REV8, ROL, ROR, SEXT_B, SEXT_H, XNOR, ZEXT_H = newElement()
   //  val CLMUL, CLMULH, CLMULR = newElement()
   //  val BCLR, BEXT, BINV, BSET = newElement()
+
 }
 
 case class ImmediateDecoder(ir: Bits) {
@@ -175,15 +177,15 @@ case class decoder()(implicit conf: Config) extends Component {
 
   def addOPs_RvM(config: Config): Unit = {
     if(config.Rvm){
-      addDecoding(Opcodes.MUL, InstructionType.R, mutable.Map(UOPs.newElement("MUL") -> uop_handle(cycles = conf.Multiplier.cycles_comb,fuType = FU_TYPE.MUL)))
-      addDecoding(Opcodes.MULH, InstructionType.R, mutable.Map(UOPs.newElement("MULH") -> uop_handle(cycles = conf.Multiplier.cycles_comb,fuType = FU_TYPE.MUL)))
-      addDecoding(Opcodes.MULHSU, InstructionType.R, mutable.Map(UOPs.newElement("MULHSU") -> uop_handle(cycles = conf.Multiplier.cycles_comb,fuType = FU_TYPE.MUL)))
-      addDecoding(Opcodes.MULHU, InstructionType.R, mutable.Map(UOPs.newElement("MULHU") -> uop_handle(cycles = conf.Multiplier.cycles_comb,fuType = FU_TYPE.MUL)))
+      addDecoding(Opcodes.MUL, InstructionType.R, mutable.Map(UOPs.newElement("MUL") -> uop_handle(cycles = conf.Multiplier.cands(conf.MultiplierType)("delay"),fuType = FU_TYPE.MUL)))
+      addDecoding(Opcodes.MULH, InstructionType.R, mutable.Map(UOPs.newElement("MULH") -> uop_handle(cycles = conf.Multiplier.cands(conf.MultiplierType)("delay"),fuType = FU_TYPE.MUL)))
+      addDecoding(Opcodes.MULHSU, InstructionType.R, mutable.Map(UOPs.newElement("MULHSU") -> uop_handle(cycles = conf.Multiplier.cands(conf.MultiplierType)("delay"),fuType = FU_TYPE.MUL)))
+      addDecoding(Opcodes.MULHU, InstructionType.R, mutable.Map(UOPs.newElement("MULHU") -> uop_handle(cycles = conf.Multiplier.cands(conf.MultiplierType)("delay"),fuType = FU_TYPE.MUL)))
 
-      addDecoding(Opcodes.DIV, InstructionType.R, mutable.Map(UOPs.newElement("DIV") -> uop_handle(cycles = conf.Divider.cycles_radix4,fuType = FU_TYPE.MUL)))
-      addDecoding(Opcodes.DIVU, InstructionType.R, mutable.Map(UOPs.newElement("DIVU") -> uop_handle(cycles = conf.Divider.cycles_radix4,fuType = FU_TYPE.MUL)))
-      addDecoding(Opcodes.REM, InstructionType.R, mutable.Map(UOPs.newElement("REM") -> uop_handle(cycles = conf.Divider.cycles_radix4,fuType = FU_TYPE.MUL)))
-      addDecoding(Opcodes.REMU, InstructionType.R, mutable.Map(UOPs.newElement("REMU") -> uop_handle(cycles = conf.Divider.cycles_radix4,fuType = FU_TYPE.MUL)))
+      addDecoding(Opcodes.DIV, InstructionType.R, mutable.Map(UOPs.newElement("DIV") -> uop_handle(cycles = conf.Divider.cands(conf.DividerType)("delay"),fuType = FU_TYPE.MUL)))
+      addDecoding(Opcodes.DIVU, InstructionType.R, mutable.Map(UOPs.newElement("DIVU") -> uop_handle(cycles = conf.Divider.cands(conf.DividerType)("delay"),fuType = FU_TYPE.MUL)))
+      addDecoding(Opcodes.REM, InstructionType.R, mutable.Map(UOPs.newElement("REM") -> uop_handle(cycles = conf.Divider.cands(conf.DividerType)("delay"),fuType = FU_TYPE.MUL)))
+      addDecoding(Opcodes.REMU, InstructionType.R, mutable.Map(UOPs.newElement("REMU") -> uop_handle(cycles = conf.Divider.cands(conf.DividerType)("delay"),fuType = FU_TYPE.MUL)))
     }
   }
 
@@ -293,7 +295,9 @@ object decoder_inst {
       .generate({
         implicit val config = new Config(RV32I)
         val dec = decoder()
+        println(UOPs)
         dec
+
       }
       )
   }.printPruned()

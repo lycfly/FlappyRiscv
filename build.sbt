@@ -2,7 +2,7 @@ name := "FlappyRiscv"
 version := "0.1"
 
 scalaVersion := "2.12.18"
-val spinalVersion = "1.9.0"
+val spinalVersion = "1.9.3"
 
 fork := true
 
