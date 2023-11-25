@@ -1,6 +1,6 @@
 package flappyOoO.Rename
 
-import EasonLib.Arithmetic.booth4
+import EasonLib.Arithmetic.multiplier.booth4
 import EasonLib.DesignCompiler.{DesignCompilerFlow, DesignCompiler_config}
 import flappyOoO.BaseIsa.RV32I
 import flappyOoO.Config

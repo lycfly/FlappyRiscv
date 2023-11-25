@@ -74,6 +74,7 @@ object shifter_inst {
         val config = Config(RV32I)
         val shifter = new Shifter(config)
         val dec = decoder()(config)
+
         shifter.rework({
           shifter.build()
         })

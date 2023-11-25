@@ -1,6 +1,6 @@
 package flappyOoO
 
-import EasonLib.Arithmetic.SignMultiplier
+import EasonLib.Arithmetic.multiplier.{Booth4SignedMultiplier, CombSignedMultiplier, SignMultiplier}
 import flappyOoO.BaseIsa.RV32I
 
 sealed trait BaseIsa {
@@ -36,7 +36,7 @@ case class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
   def ClusterNum: Int = IssueWidth
   def MaxInstrCycles = 32
 
-  def MultiplierType = "comb"
+  def MultiplierType = CombSignedMultiplier
   def DividerType = "radix4"
 
   def clusters = Array(
@@ -62,10 +62,9 @@ case class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
   }
   object Multiplier {
 
-    val cands = Map("comb" -> Map("delay" -> 1, "inst" -> (new SignMultiplier(xlen, xlen, withOutReg = true))),
-                    "radix2" -> Map("delay" -> (xlen + 1)),
-                    "radix4" -> Map("delay" -> (xlen/2 + 1)),
-                    "radix8" -> Map("delay" -> (xlen/3 + 1))
+    val cands = Map(CombSignedMultiplier -> Map("delay" -> 1),
+                    Booth4SignedMultiplier -> Map("delay" -> (xlen/2 + 1)),
+
     )
   }
   object Divider{
