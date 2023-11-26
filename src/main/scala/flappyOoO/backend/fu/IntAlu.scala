@@ -8,10 +8,11 @@ import spinal.core._
 import spinal.lib.{Stream, master, slave}
 
 
-class IntAlu(conf: Config) extends Component{
+class IntAlu(conf: Config, withAGU: Boolean = false) extends Component{
   val io = new Bundle{
     val fu_if = slave(Stream(iq2fu_if(conf)))
     val result = master(Stream(UInt(conf.xlen bits)))
+    val address_result_out = withAGU generate out(UInt(conf.xlen bits))
   }
 
   noIoPrefix()
@@ -29,10 +30,19 @@ class IntAlu(conf: Config) extends Component{
   val add_pinB = is_minus_flag ? src2_neg | src2
   val add_result = UInt(conf.xlen + 1 bits)
   add_result := add_pinA +^ add_pinB
+  if(withAGU){
+    io.address_result_out := 0
+  }
 
   def build() = {
     is_minus_flag := False
     switch(op) {
+      if(withAGU){
+        is(UOPs.JAL, UOPs.JALR) {
+          is_minus_flag := False
+          io.address_result_out := add_result(conf.xlen - 1 downto 0)
+        }
+      }
       is(UOPs.ADD) {
         is_minus_flag := False
         io.result.payload := add_result(conf.xlen - 1 downto 0)
@@ -72,11 +82,11 @@ object IntAlu_inst {
       inlineConditionalExpression = true,
       enumPrefixEnable = false,
       anonymSignalPrefix = "tmp",
-      targetDirectory = "rtl")
+      targetDirectory = "rtl_gen")
       .addStandardMemBlackboxing(blackboxAll)
       .generate({
         val config = Config(RV32I)
-        val alu = new IntAlu(config)
+        val alu = new IntAlu(config, true)
         val dec = decoder()(config)
         println(UOPs.elements.filter(_.getName() == "CSRRW")(0))
         alu.rework({

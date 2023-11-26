@@ -152,7 +152,7 @@ case class decoder()(implicit conf: Config) extends Component {
     addDecoding(Opcodes.SH, InstructionType.S, mutable.Map(UOPs.STORE -> uop_handle(rs2 = rg_handle(width = AccessWidth.H), fuType = FU_TYPE.LSU)))
     addDecoding(Opcodes.SB, InstructionType.S, mutable.Map(UOPs.STORE -> uop_handle(rs2 = rg_handle(width = AccessWidth.B), fuType = FU_TYPE.LSU)))
     // branch
-    addDecoding(Opcodes.JAL, InstructionType.J, mutable.Map(UOPs.JAL -> uop_handle(rs1 = rg_handle(source = RegisterSource.PC), rs2 = rg_handle(source = RegisterSource.IMM), fuType = FU_TYPE.BRU)))
+    addDecoding(Opcodes.JAL, InstructionType.J, mutable.Map(UOPs.JAL -> uop_handle(rs1 = rg_handle(source = RegisterSource.X0), rs2 = rg_handle(source = RegisterSource.IMM), fuType = FU_TYPE.BRU)))
     addDecoding(Opcodes.JALR, InstructionType.I, mutable.Map(UOPs.JALR -> uop_handle(rs2 = rg_handle(source = RegisterSource.IMM), fuType = FU_TYPE.BRU)))
     addDecoding(Opcodes.BEQ, InstructionType.B, mutable.Map(UOPs.BEQ -> uop_handle(fuType = FU_TYPE.BRU)))
     addDecoding(Opcodes.BNE, InstructionType.B, mutable.Map(UOPs.BNE -> uop_handle(fuType = FU_TYPE.BRU)))

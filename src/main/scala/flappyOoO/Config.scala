@@ -1,5 +1,6 @@
 package flappyOoO
 
+import EasonLib.Arithmetic.divider.RestoringSignedDivider
 import EasonLib.Arithmetic.multiplier.{Booth4SignedMultiplier, CombSignedMultiplier, SignMultiplier}
 import flappyOoO.BaseIsa.RV32I
 
@@ -37,7 +38,7 @@ case class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
   def MaxInstrCycles = 32
 
   def MultiplierType = CombSignedMultiplier
-  def DividerType = "radix4"
+  def DividerType = RestoringSignedDivider
 
   def clusters = Array(
     Array(FU_TYPE.ALU, FU_TYPE.BRU, FU_TYPE.MUL, FU_TYPE.CSR, FU_TYPE.LSU, FU_TYPE.BIT), // cluster 0
@@ -68,10 +69,7 @@ case class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
     )
   }
   object Divider{
-    val cands = Map("comb" -> Map("delay" -> 1),
-      "radix2" -> Map("delay" -> (xlen + 1)),
-      "radix4" -> Map("delay" -> (xlen / 2 + 1)),
-      "radix8" -> Map("delay" -> (xlen / 3 + 1))
+    val cands = Map(RestoringSignedDivider -> Map("delay" -> (xlen + 1)),
     )
   }
 

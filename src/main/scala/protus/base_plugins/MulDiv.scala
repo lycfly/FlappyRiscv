@@ -6,10 +6,15 @@ import spinal.lib._
 
 private object Data {
   object MUL extends PipelineData(Bool())
+
   object MUL_HIGH extends PipelineData(Bool())
+
   object MULDIV_RS1_SIGNED extends PipelineData(Bool())
+
   object MULDIV_RS2_SIGNED extends PipelineData(Bool())
+
   object DIV extends PipelineData(Bool())
+
   object REM extends PipelineData(Bool())
 }
 
@@ -140,66 +145,67 @@ class MulDiv(exeStages: Set[Stage]) extends Plugin[Pipeline] {
           output(pipeline.data.RD_DATA_VALID) := True
         }
 
-//        when(arbitration.isRunning && isMul) {
-//          arbitration.isReady := False
-//
-//          val rs1 = value(pipeline.data.RS1_DATA)
-//          val rs2 = value(pipeline.data.RS2_DATA)
+        //        when(arbitration.isRunning && isMul) {
+        //          arbitration.isReady := False
+        //
+        //          val rs1 = value(pipeline.data.RS1_DATA)
+        //          val rs2 = value(pipeline.data.RS2_DATA)
 
-//          when(value(Data.MULDIV_RS2_SIGNED) && rs2.asSInt < 0) {
-//            // If RS2 is signed, RS1 is also signed
-//            multiplicand :=
-//              Utils.signExtend(Utils.twosComplement(rs1), config.xlen + 1)
-//            multiplier := Utils.twosComplement(rs2)
-//          } otherwise {
-//            when(value(Data.MULDIV_RS1_SIGNED)) {
-//              multiplicand := Utils.signExtend(rs1, config.xlen + 1)
-//            } otherwise {
-//              multiplicand := Utils.zeroExtend(rs1, config.xlen + 1)
-//            }
-//
-//            multiplier := rs2
-//          }
+        //          when(value(Data.MULDIV_RS2_SIGNED) && rs2.asSInt < 0) {
+        //            // If RS2 is signed, RS1 is also signed
+        //            multiplicand :=
+        //              Utils.signExtend(Utils.twosComplement(rs1), config.xlen + 1)
+        //            multiplier := Utils.twosComplement(rs2)
+        //          } otherwise {
+        //            when(value(Data.MULDIV_RS1_SIGNED)) {
+        //              multiplicand := Utils.signExtend(rs1, config.xlen + 1)
+        //            } otherwise {
+        //              multiplicand := Utils.zeroExtend(rs1, config.xlen + 1)
+        //            }
+        //
+        //            multiplier := rs2
+        //          }
 
-//          when(initMul) {
-//            productH := 0
-//            productL := multiplier
-//            step.clear()
-//            initMul := False
-//          } elsewhen (step.willOverflowIfInc) {
-//            step.increment()
-//            initMul := True
-//
-//            arbitration.isReady := True
-//            output(pipeline.data.RD_DATA) := value(Data.MUL_HIGH) ? productH | productL
-//            output(pipeline.data.RD_DATA_VALID) := True
-//          } otherwise {
-//            step.increment()
-//
-//            val extendedProductH = UInt(config.xlen + 1 bits)
-//
-//            when(value(Data.MULDIV_RS1_SIGNED) || value(Data.MULDIV_RS2_SIGNED)) {
-//              extendedProductH := Utils.signExtend(productH, config.xlen + 1)
-//            } otherwise {
-//              extendedProductH := Utils.zeroExtend(productH, config.xlen + 1)
-//            }
-//
-//            val partialSum = UInt(config.xlen + 1 bits)
-//
-//            when(product.lsb) {
-//              partialSum := extendedProductH + multiplicand
-//            } otherwise {
-//              partialSum := extendedProductH
-//            }
-//
-//            product := partialSum @@ product(config.xlen - 1 downto 1)
-//          }
-//        }
+        //          when(initMul) {
+        //            productH := 0
+        //            productL := multiplier
+        //            step.clear()
+        //            initMul := False
+        //          } elsewhen (step.willOverflowIfInc) {
+        //            step.increment()
+        //            initMul := True
+        //
+        //            arbitration.isReady := True
+        //            output(pipeline.data.RD_DATA) := value(Data.MUL_HIGH) ? productH | productL
+        //            output(pipeline.data.RD_DATA_VALID) := True
+        //          } otherwise {
+        //            step.increment()
+        //
+        //            val extendedProductH = UInt(config.xlen + 1 bits)
+        //
+        //            when(value(Data.MULDIV_RS1_SIGNED) || value(Data.MULDIV_RS2_SIGNED)) {
+        //              extendedProductH := Utils.signExtend(productH, config.xlen + 1)
+        //            } otherwise {
+        //              extendedProductH := Utils.zeroExtend(productH, config.xlen + 1)
+        //            }
+        //
+        //            val partialSum = UInt(config.xlen + 1 bits)
+        //
+        //            when(product.lsb) {
+        //              partialSum := extendedProductH + multiplicand
+        //            } otherwise {
+        //              partialSum := extendedProductH
+        //            }
+        //
+        //            product := partialSum @@ product(config.xlen - 1 downto 1)
+        //          }
+        //        }
       }
     }
 
     for (divStage <- exeStages) {
       divStage plug new Area {
+
         import divStage._
 
         val quotient = Reg(UInt(config.xlen bits)).init(0)
@@ -278,3 +284,6 @@ class MulDiv(exeStages: Set[Stage]) extends Plugin[Pipeline] {
     }
   }
 }
+
+
+

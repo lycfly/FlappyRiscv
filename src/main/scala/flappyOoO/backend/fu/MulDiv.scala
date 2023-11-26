@@ -1,5 +1,6 @@
 package flappyOoO.backend.fu
 
+import EasonLib.Arithmetic.divider.{DivConfig, DivWraper, restoring_div}
 import EasonLib.Arithmetic.multiplier.{MUlConfig, MulWraper, SignMultiplier, booth4}
 import EasonLib.Utils.MyProgress
 import flappyOoO.BaseIsa.RV32I
@@ -25,10 +26,16 @@ class MulDiv(conf: Config) extends Component {
   val src2 = io.fu_if.payload.rs2
 
   val mc = MUlConfig(conf.xlen+1, conf.xlen+1, conf.MultiplierType, use_busy_flag = true)
+  val dc = DivConfig(conf.xlen, conf.xlen, DivVender = conf.DividerType, use_busy_flag = true)
   val mul_wraper = MulWraper(mc)
+  val div_wraper = DivWraper(dc)
   mul_wraper.io.mulif.dinA := (src1.msb ## src1).asBits
   mul_wraper.io.mulif.dinB := (src2.msb ## src2).asBits
   mul_wraper.io.mulif.din_vld := False
+
+  div_wraper.io.divif.dinA  := (src1.msb ## src1).asBits
+  div_wraper.io.divif.dinB  := (src2.msb ## src2).asBits
+  div_wraper.io.divif.din_vld := False
 
   io.fu_if.ready := io.result.ready
   io.result.payload := 0
@@ -63,6 +70,34 @@ class MulDiv(conf: Config) extends Component {
         mul_wraper.io.mulif.din_vld := io.fu_if.valid
         io.fu_if.ready := io.result.ready & ~mul_wraper.io.mulif.busy
       }
+      is(UOPs.get_element("DIV")) {
+        io.result.payload := div_wraper.io.divif.quot.asUInt(conf.xlen - 1 downto 0)
+        io.result.valid := div_wraper.io.divif.dout_vld
+        div_wraper.io.divif.din_vld := io.fu_if.valid
+        io.fu_if.ready := io.result.ready & ~div_wraper.io.divif.busy
+      }
+      is(UOPs.get_element("DIVU")) {
+        div_wraper.io.divif.dinA := (False ## src1).asBits
+        div_wraper.io.divif.dinB := (False ## src2).asBits
+        io.result.payload := div_wraper.io.divif.quot.asUInt(conf.xlen - 1 downto 0)
+        io.result.valid := div_wraper.io.divif.dout_vld
+        div_wraper.io.divif.din_vld := io.fu_if.valid
+        io.fu_if.ready := io.result.ready & ~div_wraper.io.divif.busy
+      }
+      is(UOPs.get_element("REM")) {
+        io.result.payload := div_wraper.io.divif.remainder.asUInt(conf.xlen - 1 downto 0)
+        io.result.valid := div_wraper.io.divif.dout_vld
+        div_wraper.io.divif.din_vld := io.fu_if.valid
+        io.fu_if.ready := io.result.ready & ~div_wraper.io.divif.busy
+      }
+      is(UOPs.get_element("REMU")) {
+        div_wraper.io.divif.dinA := (False ## src1).asBits
+        div_wraper.io.divif.dinB := (False ## src2).asBits
+        io.result.payload := div_wraper.io.divif.remainder.asUInt(conf.xlen - 1 downto 0)
+        io.result.valid := div_wraper.io.divif.dout_vld
+        div_wraper.io.divif.din_vld := io.fu_if.valid
+        io.fu_if.ready := io.result.ready & ~div_wraper.io.divif.busy
+      }
     }
   }
 
@@ -96,3 +131,4 @@ object MulDiv_inst {
       })
   }.printPruned()
 }
+
