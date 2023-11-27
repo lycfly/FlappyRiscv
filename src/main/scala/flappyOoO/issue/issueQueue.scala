@@ -3,7 +3,7 @@ package flappyOoO.issue
 import EasonLib.Common_ip.{CompareBalancedTree, CompareOpFunction, OlderCompFunc}
 import EasonLib.Utils.PortToRegWithInit
 import flappyOoO.BaseIsa.RV32I
-import flappyOoO.{Config, FU_TYPE, RegisterSource, RegisterType}
+import flappyOoO.{AccessWidth, Config, FU_TYPE, RegisterSource, RegisterType}
 import flappyOoO.Decode.{UOPs, micro_op_if}
 import flappyOoO.dispatch.dispatch_iq_if
 import spinal.sim._
@@ -22,6 +22,7 @@ case class rs_iq_entry(conf: Config) extends Bundle {
 case class rd_iq_entry(conf: Config) extends Bundle {
   val index = UInt(log2Up(conf.PhysicalRegsNum) bits)
   val used = Bool()
+  val lsu_width = AccessWidth()
 }
 case class iq_entry(conf: Config) extends Bundle{
   val freedBit = Bool()
@@ -80,7 +81,7 @@ class issueQueue(implicit conf: Config) extends Component {
       //rd info
       iq(IqWriteIndex(i)).rd.used := io.dispIq(i).uopRn.rd.is_used
       iq(IqWriteIndex(i)).rd.index := io.dispIq(i).uopRn.rd.index
-
+      iq(IqWriteIndex(i)).rd.lsu_width := io.dispIq(i).uopRn.rd.width
     }
 
   }

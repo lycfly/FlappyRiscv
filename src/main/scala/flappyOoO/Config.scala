@@ -3,6 +3,7 @@ package flappyOoO
 import EasonLib.Arithmetic.divider.RestoringSignedDivider
 import EasonLib.Arithmetic.multiplier.{Booth4SignedMultiplier, CombSignedMultiplier, SignMultiplier}
 import flappyOoO.BaseIsa.RV32I
+import spinal.core.BitCount
 
 sealed trait BaseIsa {
   val xlen: Int
@@ -77,15 +78,18 @@ case class Config(val baseIsa: BaseIsa = RV32I, val debug: Boolean = true) {
   def ibusConfig = MemBusConfig(
     addressWidth = baseIsa.xlen,
     dataWidth = FetchWidth,
-    readWrite = false
+    write_enable = false
   )
   def readDbusConfig = MemBusConfig(
     addressWidth = baseIsa.xlen,
     dataWidth = baseIsa.xlen,
-    readWrite = false
+    write_enable = false
   )
   def dbusConfig = MemBusConfig(
     addressWidth = baseIsa.xlen,
     dataWidth = baseIsa.xlen
   )
+  def dbusIdWidth: BitCount = 0
+
+
 }

@@ -1,6 +1,6 @@
 package flappyOoO.regfile_read
 
-import flappyOoO.{Config, FU_TYPE, RegisterSource}
+import flappyOoO.{AccessWidth, Config, FU_TYPE, RegisterSource}
 import flappyOoO.Decode.UOPs
 import flappyOoO.issue.{iq_entry, rd_iq_entry, rs_iq_entry}
 import spinal.sim._
@@ -14,6 +14,7 @@ case class iq2fu_if(conf: Config) extends Bundle{
   val fu = FU_TYPE()
   val op = UOPs()
   val pc = UInt(conf.xlen bits)
+  val lsu_width = AccessWidth()
   val rs1 = Bits(conf.xlen bits)
   val rs2 = Bits(conf.xlen bits)
   val rd_index = UInt(log2Up(conf.PhysicalRegsNum) bits)
@@ -41,6 +42,7 @@ class rf_access(conf: Config) extends Component {
     io.fu_if(i).payload.op := io.iq_issued(i).payload.op
     io.fu_if(i).payload.rd_index := io.iq_issued(i).payload.rd.index
     io.fu_if(i).payload.pc := io.iq_issued(i).payload.pc
+    io.fu_if(i).payload.lsu_width := io.iq_issued(i).payload.rd.lsu_width
 
     switch(io.iq_issued(i).payload.rs1.source){
       is(RegisterSource.REGISTER){

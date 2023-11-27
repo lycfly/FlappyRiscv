@@ -38,7 +38,7 @@ class IntAlu(conf: Config, withAGU: Boolean = false) extends Component{
     is_minus_flag := False
     switch(op) {
       if(withAGU){
-        is(UOPs.JAL, UOPs.JALR) {
+        is(UOPs.JAL, UOPs.JALR, UOPs.LOAD, UOPs.LOADU, UOPs.STORE) {
           is_minus_flag := False
           io.address_result_out := add_result(conf.xlen - 1 downto 0)
         }

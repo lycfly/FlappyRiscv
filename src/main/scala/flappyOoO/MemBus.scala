@@ -9,7 +9,7 @@ import spinal.lib.bus.simple.{PipelinedMemoryBus, PipelinedMemoryBusConfig}
 case class MemBusConfig(
     addressWidth: Int,
     dataWidth: Int,
-    readWrite: Boolean = true
+    write_enable: Boolean = true
 ) {
   def byte2WordAddress(ba: UInt): UInt = ba(dataWidth - 1 downto log2Up(dataWidth / 8))
   def word2ByteAddress(wa: UInt): UInt = wa << log2Up(dataWidth / 8)
@@ -18,9 +18,9 @@ case class MemBusConfig(
 case class MemBusCmd(config: MemBusConfig, idWidth: BitCount) extends Bundle {
   val address = UInt(config.addressWidth bits)
   val id = UInt(idWidth)
-  val write = if (config.readWrite) Bool() else null
-  val wdata = if (config.readWrite) UInt(config.dataWidth bits) else null
-  val wmask = if (config.readWrite) Bits(config.dataWidth / 8 bits) else null
+  val write = if (config.write_enable) Bool() else null
+  val wdata = if (config.write_enable) UInt(config.dataWidth bits) else null
+  val wmask = if (config.write_enable) Bits(config.dataWidth / 8 bits) else null
 }
 
 case class MemBusRsp(config: MemBusConfig, idWidth: BitCount) extends Bundle {
@@ -43,7 +43,7 @@ case class MemBus(val config: MemBusConfig, val idWidth: BitCount)
     val pipeMemBusConfig = MemBus.getPipeMemBusConfig(config)
     val pipeMemBus = PipelinedMemoryBus(pipeMemBusConfig)
     pipeMemBus.cmd.valid := cmd.valid
-    if(config.readWrite){
+    if(config.write_enable){
       pipeMemBus.cmd.payload.write := cmd.payload.write
       pipeMemBus.cmd.payload.mask := cmd.payload.wmask
       pipeMemBus.cmd.payload.data := cmd.payload.wdata.asBits
@@ -173,7 +173,7 @@ class MemBusControl(bus: MemBus)(implicit config: Config) extends Area {
     val cmd = Reg(MemBusCmd(bus.config, bus.idWidth))
 
     def isIssued = valid || ready
-    def isWrite = if (bus.config.readWrite) cmd.write else False
+    def isWrite = if (bus.config.write_enable) cmd.write else False
   }
 
   currentCmd.cmd.id.assignDontCare()
@@ -186,7 +186,7 @@ class MemBusControl(bus: MemBus)(implicit config: Config) extends Area {
   bus.cmd.id := currentCmd.cmd.id
   bus.cmd.address := currentCmd.cmd.address
 
-  if (bus.config.readWrite) {
+  if (bus.config.write_enable) {
     bus.cmd.write := currentCmd.cmd.write
     bus.cmd.wdata := currentCmd.cmd.wdata
     bus.cmd.wmask := currentCmd.cmd.wmask
@@ -210,7 +210,7 @@ class MemBusControl(bus: MemBus)(implicit config: Config) extends Area {
       wdata: UInt = null,
       wmask: Bits = null
   ) = {
-    assert(!write || bus.config.readWrite)
+    assert(!write || bus.config.write_enable)
 
     when(bus.cmd.ready) {
       currentCmd.valid := False
@@ -224,7 +224,7 @@ class MemBusControl(bus: MemBus)(implicit config: Config) extends Area {
     bus.cmd.valid := True
     bus.cmd.address := address
 
-    if (bus.config.readWrite) {
+    if (bus.config.write_enable) {
       if (write) {
         currentCmd.cmd.write := True
         currentCmd.cmd.wdata := wdata
@@ -271,7 +271,7 @@ class MemBusControl(bus: MemBus)(implicit config: Config) extends Area {
   }
 
   def write(address: UInt, wdata: UInt, wmask: Bits): Bool = {
-    assert(bus.config.readWrite)
+    assert(bus.config.write_enable)
 
     val accepted = False
     val dropRsp = False
@@ -304,7 +304,7 @@ class IBusControl(
     irQueueSize: Int = 4
 )(implicit config: Config)
     extends Area {
-  assert(!bus.config.readWrite)
+  assert(!bus.config.write_enable)
   assert(ibusLatency > 0)
 
   case class Cmd() extends Bundle {
