@@ -1,13 +1,16 @@
 package boom_v1
 
+import boom_v1.predictor.BTBParams
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
+
 import scala.util.Random
 import scala.language.postfixOps
 
 case class Parameters(
+                       instBits: Int = 32,
                        coreMaxAddrBits: Int = 32,
                        fetchWidth: Int = 2,
                        decodeWidth: Int = 1,
@@ -21,6 +24,8 @@ case class Parameters(
                        maxBrCount: Int = 4,
                        fetchBufferSz: Int = 4,
                        vaddrBits: Int = 32,
+
+                       btb: Option[BTBParams] = Some(BTBParams()),
 
                        usingFPU: Boolean = false,
                        enableAgePriorityIssue: Boolean = true,
@@ -36,7 +41,7 @@ case class Parameters(
                        //                           gshare: Option[GShareParameters] = None,
                        //                           gskew: Option[GSkewParameters] = None
                      ) {
-  val coreInstBytes = 4
+  val coreInstBytes = instBits / 8
   val MAX_WAKEUP_DELAY = 3 // unused
   val FETCH_WIDTH = fetchWidth // number of insts we can fetch
   val DECODE_WIDTH = decodeWidth
@@ -77,6 +82,12 @@ case class Parameters(
   require(NUM_ROB_ENTRIES % DECODE_WIDTH == 0)
   require(isPow2(NUM_LSU_ENTRIES))
   require((NUM_LSU_ENTRIES - 1) > DECODE_WIDTH)
+
+
+  /** Core parameters */
+  def instBytes: Int = instBits / 8
+
+  def fetchBytes: Int = fetchWidth * instBytes
 }
 
 
