@@ -173,41 +173,59 @@ class TrueLRU(n_ways: Int) extends ReplacementPolicy {
 
   def state_read = UInt().default(state_reg)
 
+  /**
+  LYC: For example:
+  4-way: state = {b5,b4,b3,b2,b1,b0}
+   way0-moreRecentVec = {b2,b1,b0, 0}
+   way1-moreRecentVec = {b4,b3, 0, 0}
+   way2-moreRecentVec = {b5, 0, 0, 0}
+   */
   private def extractMRUVec(state: UInt): Seq[UInt] = {
     // Extract per-way information about which higher-indexed ways are more recently used
-    val moreRecentVec = Wire(Vec(n_ways - 1, UInt(n_ways.W)))
+    val moreRecentVec = Vec(UInt(n_ways bits), n_ways - 1)
     var lsb = 0
     for (i <- 0 until n_ways - 1) {
-      moreRecentVec(i) := Cat(state(lsb + n_ways - i - 2, lsb), 0.U((i + 1).W))
+      moreRecentVec(i) := Cat(state(lsb + n_ways - i - 2 downto lsb), U(0, (i + 1) bits))
       lsb = lsb + (n_ways - i - 1)
     }
     moreRecentVec
   }
 
   def get_next_state(state: UInt, touch_way: UInt): UInt = {
-    val nextState = Wire(Vec(n_ways - 1, UInt(n_ways.W)))
+    val nextState = Vec(UInt(n_ways bits), n_ways - 1)
     val moreRecentVec = extractMRUVec(state) // reconstruct lower triangular matrix
-    val wayDec = UIntToOH(touch_way, n_ways)
+    val wayDec = UIntToOh(touch_way, n_ways)
 
     // Compute next value of triangular matrix
     // set the touched way as more recent than every other way
-    nextState.zipWithIndex.map { case (e, i) =>
-      e := Mux(i.U === touch_way, 0.U(n_ways.W), moreRecentVec(i) | wayDec)
+    nextState.zipWithIndex.foreach { case (e, i) =>
+      e := Mux(i === touch_way, U(0,n_ways bits), moreRecentVec(i) | wayDec.asUInt)
     }
 
-    nextState.zipWithIndex.tail.foldLeft((nextState.head.apply(n_ways - 1, 1), 0)) { case ((pe, pi), (ce, ci)) => (Cat(ce.apply(n_ways - 1, ci + 1), pe), ci) }._1
+    /**
+      LYC: For example:
+      Vec(0) = [b3,b2,b1, x]
+      Vec(1) = [b5,b4, x, x]
+      Vec(2) = [b6,x,  x, x]
+      step1: nextState  = ({b5, b4, b3, b2, b1}, 1)
+      step2: nextState  = ({b6, b5, b4, b3, b2, b1}, 2)
+      final: nextState = {b6, b5, b4, b3, b2, b1}
+      */
+    nextState.zipWithIndex.tail.foldLeft((nextState.head(n_ways - 1 downto 1), 0)) {
+      case ((pe, pi), (ce, ci)) => (Cat(ce(n_ways - 1 downto ci + 1), pe).asUInt, ci) }._1
   }
 
   def access(touch_way: UInt): Unit = {
     state_reg := get_next_state(state_reg, touch_way)
   }
 
-  def access(touch_ways: Seq[Valid[UInt]]): Unit = {
+  def access(touch_ways: Seq[Flow[UInt]]): Unit = {
     when(touch_ways.map(_.valid).orR) {
       state_reg := get_next_state(state_reg, touch_ways)
     }
     for (i <- 1 until touch_ways.size) {
-      cover(PopCount(touch_ways.map(_.valid)) === i.U, s"LRU_UpdateCount$i", s"LRU Update $i simultaneous")
+//      cover(CountOne(touch_ways.map(_.valid)) === U(i), s"LRU_UpdateCount${i}", s"LRU Update ${i} simultaneous")
+      cover(CountOne(touch_ways.map(_.valid)) === U(i))
     }
   }
 
@@ -215,8 +233,8 @@ class TrueLRU(n_ways: Int) extends ReplacementPolicy {
     val moreRecentVec = extractMRUVec(state) // reconstruct lower triangular matrix
     // For each way, determine if all other ways are more recent
     val mruWayDec = (0 until n_ways).map { i =>
-      val upperMoreRecent = (if (i == n_ways - 1) true.B else moreRecentVec(i).apply(n_ways - 1, i + 1).andR)
-      val lowerMoreRecent = (if (i == 0) true.B else moreRecentVec.map(e => !e(i)).reduce(_ && _))
+      val upperMoreRecent = (if (i == n_ways - 1) True else moreRecentVec(i)(n_ways - 1 downto i + 1).andR)
+      val lowerMoreRecent = (if (i == 0) True else moreRecentVec.map(e => !e(i)).reduce(_ && _))
       upperMoreRecent && lowerMoreRecent
     }
     OHToUInt(mruWayDec)

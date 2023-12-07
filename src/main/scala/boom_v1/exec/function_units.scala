@@ -2,6 +2,7 @@ package boom_v1.exec
 
 import boom_v1.Parameters
 import boom_v1.commit.Exception
+import boom_v1.predictor.{BHTUpdate, BTBUpdate}
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
@@ -55,9 +56,9 @@ class BranchUnitResp(implicit p: Parameters) extends Bundle
 
   val brinfo          = new BrResolutionInfo()
   val btb_update_valid= Bool() // TODO turn this into a directed bundle so we can fold this into btb_update?
-  val btb_update      = new rocket.BTBUpdate
-  val bht_update      = Valid(new rocket.BHTUpdate)
-  val bpd_update      = Valid(new BpdUpdate)
+  val btb_update      = new BTBUpdate
+  val bht_update      = Flow(new BHTUpdate)
+  val bpd_update      = Flow(new BpdUpdate)
 
   val xcpt            = Flow(new Exception)
 
