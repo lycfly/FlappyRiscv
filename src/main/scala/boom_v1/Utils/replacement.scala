@@ -53,7 +53,7 @@ object Random {
 
   def oneHot(mod: Int, random: UInt): UInt = {
     if (isPow2(mod)) UIntToOh(random(log2Up(mod) - 1 downto 0)).asUInt
-    else PriorityEncoderOH(partition(apply(1 << log2Up(mod * 8), random), mod)).asUInt
+    else PriorityEncoderOH(partition(apply(1 << log2Up(mod * 8), random), mod)).asBits().asUInt
   }
 
   def oneHot(mod: Int): UInt = oneHot(mod, randomizer)
@@ -321,26 +321,26 @@ class PseudoLRU(n_ways: Int) extends ReplacementPolicy {
             get_next_state(left_subtree_state, touch_way(log2Up(left_nways) - 1 downto 0), left_nways)), // recurse left if newer
           Mux(set_left_older,
             get_next_state(right_subtree_state, touch_way(log2Up(right_nways) - 1 downto 0), right_nways), // recurse right if newer
-            right_subtree_state)) // if setting right sub-tree as older, do NOT recurse into right sub-tree
+            right_subtree_state)).asUInt // if setting right sub-tree as older, do NOT recurse into right sub-tree
       } else {
         // we are at a branching node in the tree with only a right sub-tree, so recurse only right sub-tree
         Cat(set_left_older,
           Mux(set_left_older,
             get_next_state(right_subtree_state, touch_way(log2Up(right_nways) - 1 downto 0), right_nways), // recurse right if newer
-            right_subtree_state)) // if setting right sub-tree as older, do NOT recurse into right sub-tree
+            right_subtree_state)).asUInt // if setting right sub-tree as older, do NOT recurse into right sub-tree
       }
     } else if (tree_nways == 2) {
       // we are at a leaf node at the end of the tree, so set the single state bit opposite of the lsb of the touched way encoded value
-      !touch_way(0)
+      (!touch_way(0)).asUInt
     } else { // tree_nways <= 1
       // we are at an empty node in an empty tree for 1 way, so return single zero bit for Chisel (no zero-width wires)
-      0.U(1.W)
+      U(0, 1 bits)
     }
   }
 
   def get_next_state(state: UInt, touch_way: UInt): UInt = {
-    val touch_way_sized = if (touch_way.getWidth < log2Ceil(n_ways)) touch_way.padTo(log2Ceil(n_ways))
-    else touch_way.extract(log2Ceil(n_ways) - 1, 0)
+    val touch_way_sized = if (touch_way.getWidth < log2Up(n_ways)) touch_way.resize(log2Up(n_ways))
+    else touch_way(log2Up(n_ways) - 1 downto 0)
     get_next_state(state, touch_way_sized, n_ways)
   }
 
@@ -354,31 +354,31 @@ class PseudoLRU(n_ways: Int) extends ReplacementPolicy {
     // this algorithm recursively descends the binary tree, filling in the way-to-replace encoded value from msb to lsb
     if (tree_nways > 2) {
       // we are at a branching node in the tree, so recurse
-      val right_nways: Int = 1 << (log2Ceil(tree_nways) - 1) // number of ways in the right sub-tree
+      val right_nways: Int = 1 << (log2Up(tree_nways) - 1) // number of ways in the right sub-tree
       val left_nways: Int = tree_nways - right_nways // number of ways in the left sub-tree
       val left_subtree_older = state(tree_nways - 2)
-      val left_subtree_state = state.extract(tree_nways - 3, right_nways - 1)
-      val right_subtree_state = state(right_nways - 2, 0)
+      val left_subtree_state = state(tree_nways - 3 downto  right_nways - 1)
+      val right_subtree_state = state(right_nways - 2 downto 0)
 
       if (left_nways > 1) {
         // we are at a branching node in the tree with both left and right sub-trees, so recurse both sub-trees
         Cat(left_subtree_older, // return the top state bit (current tree node) as msb of the way-to-replace encoded value
           Mux(left_subtree_older, // if left sub-tree is older, recurse left, else recurse right
             get_replace_way(left_subtree_state, left_nways), // recurse left
-            get_replace_way(right_subtree_state, right_nways))) // recurse right
+            get_replace_way(right_subtree_state, right_nways))).asUInt // recurse right
       } else {
         // we are at a branching node in the tree with only a right sub-tree, so recurse only right sub-tree
         Cat(left_subtree_older, // return the top state bit (current tree node) as msb of the way-to-replace encoded value
           Mux(left_subtree_older, // if left sub-tree is older, return and do not recurse right
-            0.U(1.W),
-            get_replace_way(right_subtree_state, right_nways))) // recurse right
+            U(0, 1 bits),
+            get_replace_way(right_subtree_state, right_nways))).asUInt // recurse right
       }
     } else if (tree_nways == 2) {
       // we are at a leaf node at the end of the tree, so just return the single state bit as lsb of the way-to-replace encoded value
-      state(0)
+      state(0).asUInt
     } else { // tree_nways <= 1
       // we are at an empty node in an unbalanced tree for non-power-of-2 ways, so return single zero bit as lsb of the way-to-replace encoded value
-      0.U(1.W)
+      U(0, 1 bits)
     }
   }
 
@@ -393,13 +393,13 @@ class PseudoLRU(n_ways: Int) extends ReplacementPolicy {
 
 class SeqPLRU(n_sets: Int, n_ways: Int) extends SeqReplacementPolicy {
   val logic = new PseudoLRU(n_ways)
-  val state = SyncReadMem(n_sets, UInt(logic.nBits.W))
-  val current_state = Wire(UInt(logic.nBits.W))
-  val next_state = Wire(UInt(logic.nBits.W))
+  val state = Mem(UInt(logic.nBits bits), n_sets)
+  val current_state = UInt(logic.nBits bits)
+  val next_state =  UInt(logic.nBits bits)
   val plru_way = logic.get_replace_way(current_state)
 
   def access(set: UInt) = {
-    current_state := state.read(set)
+    current_state := state.readSync(set)
   }
 
   def update(valid: Bool, hit: Bool, set: UInt, way: UInt) = {
@@ -421,18 +421,19 @@ class SetAssocLRU(n_sets: Int, n_ways: Int, policy: String) extends SetAssocRepl
     case t => throw new IllegalArgumentException(s"unknown Replacement Policy type $t")
   }
   val state_vec =
-    if (logic.nBits == 0) Reg(Vec(n_sets, UInt(logic.nBits.W))) // Work around elaboration error on following line
-    else RegInit(VecInit(Seq.fill(n_sets)(0.U(logic.nBits.W))))
+    if (logic.nBits == 0) Reg(Vec(UInt(logic.nBits bits), n_sets)) // Work around elaboration error on following line
+    else RegInit(Vec.fill(n_sets)(U(0, logic.nBits bits)))
 
   def access(set: UInt, touch_way: UInt) = {
     state_vec(set) := logic.get_next_state(state_vec(set), touch_way)
   }
 
-  def access(sets: Seq[UInt], touch_ways: Seq[Valid[UInt]]) = {
+  def access(sets: Seq[UInt], touch_ways: Seq[Flow[UInt]]) = {
     require(sets.size == touch_ways.size, "internal consistency check: should be same number of simultaneous updates for sets and touch_ways")
     for (set <- 0 until n_sets) {
       val set_touch_ways = (sets zip touch_ways).map { case (touch_set, touch_way) =>
-        Pipe(touch_way.valid && (touch_set === set.U), touch_way.bits, 0)
+//        Pipe(touch_way.valid && (touch_set === set), touch_way.payload, 0)
+         touch_way.takeWhen(touch_set === set)
       }
       when(set_touch_ways.map(_.valid).orR) {
         state_vec(set) := logic.get_next_state(state_vec(set), set_touch_ways)

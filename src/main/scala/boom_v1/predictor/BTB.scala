@@ -4,6 +4,7 @@ package boom_v1.predictor
 // See LICENSE.SiFive for license details.
 
 import boom_v1.Parameters
+import boom_v1.Utils.PseudoLRU
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
@@ -234,9 +235,9 @@ class BTB(implicit p: Parameters) extends BtbModule {
 
   val useUpdatePageHit = updatePageHit.orR
   val usePageHit = pageHit.orR
-  val doIdxPageRepl = !useUpdatePageHit
+  val doIdxPageRepl = !useUpdatePageHit    // replacement should do when update page is not found in Index Seq
   val nextPageRepl = RegInit(U(0,log2Up(nPages) bits))
-  val idxPageRepl = Cat(pageHit(nPages-2 downto 0), pageHit(nPages-1)) | Mux(usePageHit, U(0), UIntToOh(nextPageRepl).asUInt).asBits
+  val idxPageRepl = Cat(pageHit(nPages-2 downto 0), pageHit(nPages-1)).asUInt | Mux(usePageHit, U(0), UIntToOh(nextPageRepl).asUInt)
   val idxPageUpdateOH = Mux(useUpdatePageHit, updatePageHit, idxPageRepl)
   val idxPageUpdate = OHToUInt(idxPageUpdateOH)
   val idxPageReplEn = Mux(doIdxPageRepl, idxPageRepl, U(0))
@@ -254,8 +255,8 @@ class BTB(implicit p: Parameters) extends BtbModule {
   }
 
   val repl = new PseudoLRU(entries)
-  val waddr = Mux(updateHit, updateHitAddr, repl.way)
-  val r_resp = (io.resp).stage()
+  val waddr = Mux(updateHit, updateHitAddr, repl.way)  // lyc: if update hit, use hitaddr , otherwise need replace LRU entry
+  val r_resp = (io.resp).stage()  //lyc: one cycle after resp
   when (r_resp.valid && r_resp.payload.taken || r_btb_update.valid) {
     repl.access(Mux(r_btb_update.valid, waddr, r_resp.payload.entry))
   }
@@ -285,20 +286,20 @@ class BTB(implicit p: Parameters) extends BtbModule {
     pageValid := pageValid | tgtPageReplEn | idxPageReplEn
   }
 
-  io.resp.valid := (pageHit << 1)(Mux1H(idxHit, idxPages))
-  io.resp.bits.taken := true.B
-  io.resp.bits.target := Cat(pagesMasked(Mux1H(idxHit, tgtPages)), Mux1H(idxHit, tgts) << log2Up(coreInstBytes))
-  io.resp.bits.entry := OHToUInt(idxHit)
-  io.resp.bits.bridx := (if (fetchWidth > 1) Mux1H(idxHit, brIdx) else 0.U)
-  io.resp.bits.mask := Cat((1.U << ~Mux(io.resp.bits.taken, ~io.resp.bits.bridx, 0.U))-1.U, 1.U)
-  io.resp.bits.cfiType := Mux1H(idxHit, cfiType)
+  io.resp.valid := (pageHit << 1)(MuxOH(idxHit, idxPages))
+  io.resp.payload.taken := True
+  io.resp.payload.target := Cat(pagesMasked(MuxOH(idxHit, tgtPages)), MuxOH(idxHit, tgts) << log2Up(p.coreInstBytes))
+  io.resp.payload.entry := OHToUInt(idxHit)
+  io.resp.payload.bridx := (if (p.fetchWidth > 1) MuxOH(idxHit, brIdx) else U(0))
+  io.resp.payload.mask := Cat((U(1, 1 bits) << (~Mux(io.resp.payload.taken, ~io.resp.payload.bridx, B(0))).asUInt).resize(p.fetchWidth) - U(1, 1 bits), U(1,1 bits))
+  io.resp.payload.cfiType := MuxOH(idxHit, cfiType)
 
   // if multiple entries for same PC land in BTB, zap them
   when (PopCountAtLeast(idxHit, 2)) {
     isValid := isValid & ~idxHit
   }
   when (io.flush) {
-    isValid := 0.U
+    isValid := 0
   }
 
   if (btbParams.bhtParams.nonEmpty) {
