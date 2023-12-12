@@ -72,6 +72,7 @@ trait LFSR extends PRNG {
   }
 }
 
+// scalastyle:on magic.number
 /** Utilities related to psuedorandom number generation using Linear Feedback Shift Registers (LFSRs).
   *
   * For example, to generate a pseudorandom 16-bit [[UInt]] that changes every cycle, you can use:

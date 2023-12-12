@@ -4,7 +4,7 @@ package boom_v1.predictor
 // See LICENSE.SiFive for license details.
 
 import boom_v1.Parameters
-import boom_v1.Utils.PseudoLRU
+import boom_v1.Utils.{PopCountAtLeast, PseudoLRU}
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
@@ -303,38 +303,38 @@ class BTB(implicit p: Parameters) extends BtbModule {
   }
 
   if (btbParams.bhtParams.nonEmpty) {
-    val bht = new BHT(Annotated.params(this, btbParams.bhtParams.get))
-    val isBranch = (idxHit & cfiType.map(_ === CFIType.branch).asUInt).orR
-    val res = bht.get(io.req.bits.addr)
+    val bht = new BHT(btbParams.bhtParams.get)
+    val isBranch = (idxHit.asBits & cfiType.map(_ === CFIType.branch).asBits).orR
+    val res = bht.get(io.req.payload.addr)
     when (io.bht_advance.valid) {
-      bht.advanceHistory(io.bht_advance.bits.bht.taken)
+      bht.advanceHistory(io.bht_advance.payload.bht.taken)
     }
     when (io.bht_update.valid) {
-      when (io.bht_update.bits.branch) {
-        bht.updateTable(io.bht_update.bits.pc, io.bht_update.bits.prediction, io.bht_update.bits.taken)
-        when (io.bht_update.bits.mispredict) {
-          bht.updateHistory(io.bht_update.bits.pc, io.bht_update.bits.prediction, io.bht_update.bits.taken)
+      when (io.bht_update.payload.branch) {
+        bht.updateTable(io.bht_update.payload.pc, io.bht_update.payload.prediction, io.bht_update.payload.taken)
+        when (io.bht_update.payload.mispredict) {
+          bht.updateHistory(io.bht_update.payload.pc, io.bht_update.payload.prediction, io.bht_update.payload.taken)
         }
-      }.elsewhen (io.bht_update.bits.mispredict) {
-        bht.resetHistory(io.bht_update.bits.prediction)
+      }.elsewhen (io.bht_update.payload.mispredict) {
+        bht.resetHistory(io.bht_update.payload.prediction)
       }
     }
-    when (!res.taken && isBranch) { io.resp.bits.taken := false.B }
-    io.resp.bits.bht := res
+    when (!res.taken && isBranch) { io.resp.payload.taken := False }
+    io.resp.payload.bht := res
   }
 
   if (btbParams.nRAS > 0) {
     val ras = new RAS(btbParams.nRAS)
-    val doPeek = (idxHit & cfiType.map(_ === CFIType.ret).asUInt).orR
+    val doPeek = (idxHit.asBits & cfiType.map(_ === CFIType.ret).asBits).orR
     io.ras_head.valid := !ras.isEmpty
-    io.ras_head.bits := ras.peek
+    io.ras_head.payload := ras.peek
     when (!ras.isEmpty && doPeek) {
-      io.resp.bits.target := ras.peek
+      io.resp.payload.target := ras.peek
     }
     when (io.ras_update.valid) {
-      when (io.ras_update.bits.cfiType === CFIType.call) {
-        ras.push(io.ras_update.bits.returnAddr)
-      }.elsewhen (io.ras_update.bits.cfiType === CFIType.ret) {
+      when (io.ras_update.payload.cfiType === CFIType.call) {
+        ras.push(io.ras_update.payload.returnAddr)
+      }.elsewhen (io.ras_update.payload.cfiType === CFIType.ret) {
         ras.pop()
       }
     }
