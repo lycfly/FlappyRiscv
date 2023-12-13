@@ -10,6 +10,8 @@ import scala.util.Random
 import scala.language.postfixOps
 
 case class Parameters(
+                       DEBUG_PRINTF: Boolean = false,
+
                        instBits: Int = 32,
                        coreMaxAddrBits: Int = 32,
                        fetchWidth: Int = 2,

@@ -269,12 +269,12 @@ abstract class BrPredictor(fetch_width: Int, val history_length: Int)(implicit p
 
   when (commit.valid)
   {
-    r_ghistory.commit(commit.bits.ctrl.taken.reduce(_|_))
-    r_vlh.commit(commit.bits.ctrl.taken.reduce(_|_))
+    r_ghistory.commit(commit.payload.ctrl.taken.reduce(_|_))
+    r_vlh.commit(commit.payload.ctrl.taken.reduce(_|_))
   }
   when (commit.valid && in_usermode)
   {
-    r_ghistory_u.commit(commit.bits.ctrl.taken.reduce(_|_))
+    r_ghistory_u.commit(commit.payload.ctrl.taken.reduce(_|_))
   }
 
 }
@@ -511,7 +511,7 @@ class NullBrPredictor(
 
 // Provide a branch predictor that generates random predictions. Good for testing!
 
-case object RandomBpdKey extends Field[RandomBpdParameters]
+//case object RandomBpdKey extends Field[RandomBpdParameters]
 case class RandomBpdParameters(enabled: Boolean = false)
 
 object RandomBrPredictor
@@ -560,20 +560,20 @@ class RandomBrPredictor(
 // already been committed?). Yuck. But it does waste BROB entries to include
 // JALRs.
 
-class BrobBackendIo(fetch_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
+class BrobBackendIo(fetch_width: Int)(implicit p: Parameters) extends Bundle
 {
-  val allocate = Decoupled(new BrobEntry(fetch_width)).flip // Decode/Dispatch stage, allocate new entry
-  val allocate_brob_tail = UInt(OUTPUT, width = BROB_ADDR_SZ) // tell Decode which entry gets allocated
+  val allocate = slave Stream(new BrobEntry(fetch_width)) // Decode/Dispatch stage, allocate new entry
+  val allocate_brob_tail = out UInt(width = p.BROB_ADDR_SZ bits) // tell Decode which entry gets allocated
 
-  val deallocate = Valid(new BrobDeallocateIdx).flip // Commmit stage, from the ROB
+  val deallocate = slave Flow(new BrobDeallocateIdx) // Commmit stage, from the ROB
 
-  val bpd_update = Valid(new BpdUpdate()).flip // provide br resolution information
-  val flush = Bool(INPUT) // wipe the ROB
+  val bpd_update = slave Flow(new BpdUpdate()) // provide br resolution information
+  val flush = in Bool() // wipe the ROB
 }
 
-class BrobDeallocateIdx(implicit p: Parameters) extends BoomBundle()(p)
+class BrobDeallocateIdx(implicit p: Parameters) extends Bundle
 {
-  val brob_idx = UInt(width = BROB_ADDR_SZ)
+  val brob_idx = UInt(width = p.BROB_ADDR_SZ bits)
 }
 
 // Each "entry" corresponds to a single fetch packet.
@@ -581,18 +581,17 @@ class BrobDeallocateIdx(implicit p: Parameters) extends BoomBundle()(p)
 // this only holds the MetaData, which requires combinational/highly-ported access.
 // The meat of the BrobEntry is the BpdResp information, and is stored elsewhere.
 // We must also allocate entries for JALRs in here since they can single-cycle roll-back the BROB state.
-class BrobEntryMetaData(fetch_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
+class BrobEntryMetaData(fetch_width: Int)(implicit p: Parameters) extends Bundle
 {
-  val executed     = Vec(fetch_width, Bool()) // Mark that a branch (but not JALR) executed (and should update predictor).
-  val taken        = Vec(fetch_width, Bool())
-  val mispredicted = Vec(fetch_width, Bool()) // Did bpd mispredict the br? (aka should we update predictor).
+  val executed     = Vec(Bool(), fetch_width) // Mark that a branch (but not JALR) executed (and should update predictor).
+  val taken        = Vec(Bool(), fetch_width)
+  val mispredicted = Vec(Bool(), fetch_width) // Did bpd mispredict the br? (aka should we update predictor).
   // Only set for branches, not jumps.
-  val brob_idx     = UInt(width = BROB_ADDR_SZ)
+  val brob_idx     = UInt(width = p.BROB_ADDR_SZ bits)
 
   val debug_executed = Bool() // Did a BR or JALR get executed? Verify we're not deallocating an empty entry.
-  val debug_rob_idx = UInt(width = ROB_ADDR_SZ)
+  val debug_rob_idx = UInt(width = p.BROB_ADDR_SZ bits)
 
-  override def cloneType: this.type = new BrobEntryMetaData(fetch_width).asInstanceOf[this.type]
 }
 
 class BrobEntry(fetch_width: Int)(implicit p: Parameters) extends Bundle
@@ -604,15 +603,15 @@ class BrobEntry(fetch_width: Int)(implicit p: Parameters) extends Bundle
 // TODO: for large branch snapshots, this maps very poorly to technology (very low-depth, very wide memories).
 // A future solution is to spend multiple cycles reading and writing out the branch snapshots while maintaining
 // a 1 snapshot/cycle throughput.
-class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parameters) extends BoomModule()(p)
+class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parameters) extends Module
 {
-  val io = new BoomBundle()(p)
+  val io = new Bundle
   {
     // connection to BOOM's ROB/backend/etc.
     val backend = new BrobBackendIo(fetch_width)
 
     // update predictor at commit
-    val commit_entry = Valid(new BrobEntry(fetch_width))
+    val commit_entry = Flow(new BrobEntry(fetch_width))
 
     // forward predictions
     // TODO enable bypassing of information. See if there's a "match", and then forward the outcome.
@@ -621,33 +620,33 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
   }
 
   println ("\tBROB (w=" + fetch_width + ") Size (" + num_entries + ") entries of " +
-    Wire(new BpdResp).toBits.getWidth + " bits (" +
-    Wire(new BrobEntryMetaData(fetch_width)).toBits.getWidth + " of meta-bits).")
+    (new BpdResp).getBitsWidth + " bits (" +
+    (new BrobEntryMetaData(fetch_width)).getBitsWidth + " of meta-bits).")
 
   // each entry corresponds to a fetch-packet
   // ROB shouldn't send "deallocate signal" until the entire packet has finished committing.
   // for synthesis quality, break apart ctrl (highly ported) from info, which is stored until commit.
-  val entries_ctrl = Reg(Vec(num_entries, new BrobEntryMetaData(fetch_width)))
-  val entries_info = SeqMem(num_entries, new BpdResp)
+  val entries_ctrl = Reg(Vec(new BrobEntryMetaData(fetch_width), num_entries))
+  val entries_info = Mem(new BpdResp, num_entries)
 
-  val head_ptr = Reg(init = UInt(0, log2Up(num_entries)))
-  val tail_ptr = Reg(init = UInt(0, log2Up(num_entries)))
+  val head_ptr = Reg(UInt(log2Up(num_entries) bits)) init(0)
+  val tail_ptr = Reg(UInt(log2Up(num_entries) bits)) init(0)
 
   val r_bpd_update = RegNext(io.backend.bpd_update)
   val r_deallocate = RegNext(io.backend.deallocate)
 
   private def GetIdx(addr: UInt) =
-    if (fetch_width == 1) UInt(0)
-    else (addr >> UInt(log2Ceil(coreInstBytes))) & Fill(log2Ceil(fetch_width), UInt(1))
+    if (fetch_width == 1) U(0)
+    else (addr >> U(log2Up(p.coreInstBytes))) & UInt(log2Up(fetch_width) bits).setAll()
 
   // -----------------------------------------------
   when (io.backend.allocate.valid)
   {
-    entries_ctrl(tail_ptr) := io.backend.allocate.bits.ctrl
-    entries_info.write(tail_ptr, io.backend.allocate.bits.info)
+    entries_ctrl(tail_ptr) := io.backend.allocate.payload.ctrl
+    entries_info.write(tail_ptr, io.backend.allocate.payload.info)
     tail_ptr := WrapInc(tail_ptr, num_entries)
 
-    assert (tail_ptr === io.backend.allocate.bits.ctrl.brob_idx,
+    assert (tail_ptr === io.backend.allocate.payload.ctrl.brob_idx,
       "[BROB] allocating the wrong entry.")
   }
   when (r_deallocate.valid)
@@ -656,37 +655,37 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
 
     assert (entries_ctrl(head_ptr).debug_executed === Bool(true),
       "[BROB] Committing an entry with no executed branches or jalrs.")
-    assert (head_ptr === r_deallocate.bits.brob_idx ,
+    assert (head_ptr === r_deallocate.payload.brob_idx ,
       "[BROB] Committing wrong entry.")
   }
 
   when (r_bpd_update.valid)
   {
-    val idx = GetIdx(r_bpd_update.bits.br_pc)
-    entries_ctrl(r_bpd_update.bits.brob_idx).executed(idx) := r_bpd_update.bits.is_br
-    entries_ctrl(r_bpd_update.bits.brob_idx).taken(idx) := r_bpd_update.bits.taken
-    entries_ctrl(r_bpd_update.bits.brob_idx).debug_executed := Bool(true)
+    val idx = GetIdx(r_bpd_update.payload.br_pc)
+    entries_ctrl(r_bpd_update.payload.brob_idx).executed(idx) := r_bpd_update.payload.is_br
+    entries_ctrl(r_bpd_update.payload.brob_idx).taken(idx) := r_bpd_update.payload.taken
+    entries_ctrl(r_bpd_update.payload.brob_idx).debug_executed := Bool(true)
     // update the predictor on either mispredicts or tag misses
-    entries_ctrl(r_bpd_update.bits.brob_idx).mispredicted(idx) :=
-      r_bpd_update.bits.is_br &&
-        (r_bpd_update.bits.bpd_mispredict || !r_bpd_update.bits.bpd_predict_val)
+    entries_ctrl(r_bpd_update.payload.brob_idx).mispredicted(idx) :=
+      r_bpd_update.payload.is_br &&
+        (r_bpd_update.payload.bpd_mispredict || !r_bpd_update.payload.bpd_predict_val) // lyc:  bpd_predict_val means did the bpd made a prediction
 
-    when (r_bpd_update.bits.mispredict)
+    when (r_bpd_update.payload.mispredict)
     {
       // clear the executed bits behind this instruction
       // (as they are on the misspeculated path)
       for (w <- 0 until fetch_width)
       {
-        when (UInt(w) > idx)
+        when (U(w) > idx)
         {
-          entries_ctrl(r_bpd_update.bits.brob_idx).executed(w) := Bool(false)
-          entries_ctrl(r_bpd_update.bits.brob_idx).mispredicted(w) := Bool(false)
+          entries_ctrl(r_bpd_update.payload.brob_idx).executed(w) := Bool(false)
+          entries_ctrl(r_bpd_update.payload.brob_idx).mispredicted(w) := Bool(false)
         }
       }
 
-      tail_ptr := WrapInc(r_bpd_update.bits.brob_idx, num_entries)
+      tail_ptr := WrapInc(r_bpd_update.payload.brob_idx, num_entries)
     }
-    require (coreInstBytes == 4)
+    require (p.coreInstBytes == 4)
   }
 
   // backend flushes and branch mispredictions can occur on the same cycle,
@@ -697,8 +696,8 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
   // memories).
   when (RegNext(io.backend.flush))
   {
-    head_ptr := UInt(0)
-    tail_ptr := UInt(0)
+    head_ptr := U(0)
+    tail_ptr := U(0)
     assert (!io.backend.bpd_update.valid, "[BROB] Collision of flush and BPD update.")
   }
 
@@ -707,14 +706,14 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
 
   // entries_info is a sequential memory, so buffer the rest of the bundle to match
   io.commit_entry.valid     := r_deallocate.valid
-  io.commit_entry.bits.ctrl := entries_ctrl(head_ptr)
+  io.commit_entry.payload.ctrl := entries_ctrl(head_ptr)
   // Since this is SeqRead, we need to set up the address on the previous cycle before
   // it has been incrementd, if it is going to be incremented.
   val next_head_ptr =
   Mux(r_deallocate.valid,
     WrapInc(head_ptr, num_entries),
     head_ptr)
-  io.commit_entry.bits.info := entries_info.read(next_head_ptr, io.backend.deallocate.valid)
+  io.commit_entry.payload.info := entries_info.readSync(next_head_ptr, io.backend.deallocate.valid)
 
   // TODO allow filling the entire BROB ROB, instead of wasting an entry
   val full = (head_ptr === WrapInc(tail_ptr, num_entries))
@@ -726,25 +725,25 @@ class BranchReorderBuffer(fetch_width: Int, num_entries: Int)(implicit p: Parame
 
   // -----------------------------------------------
 
-  if (DEBUG_PRINTF)
+  if (p.DEBUG_PRINTF)
   {
     for (i <- 0 until num_entries)
     {
       printf (" brob[%d] (%x) T=%x m=%x r=%d "
-        , UInt(i, log2Up(num_entries))
-        , entries_ctrl(i).executed.toBits
-        , entries_ctrl(i).taken.toBits
-        , entries_ctrl(i).mispredicted.toBits
+        , U(i, log2Up(num_entries) bits)
+        , entries_ctrl(i).executed.asBits
+        , entries_ctrl(i).taken.asBits
+        , entries_ctrl(i).mispredicted.asBits
         , entries_ctrl(i).debug_rob_idx
         //            , entries_info(i).history_ptr
         //            , entries_info(i).info
       )
-      printf("%c\n",
-        Mux(head_ptr === UInt(i) && tail_ptr === UInt(i), Str("B"),
-          Mux(head_ptr === UInt(i),                         Str("H"),
-            Mux(tail_ptr === UInt(i),                         Str("T"),
-              Str(" "))))
-      )
+//      printf("%c\n",
+//        Mux(head_ptr === U(i) && tail_ptr === U(i), Str("B"),
+//          Mux(head_ptr === U(i),                         Str("H"),
+//            Mux(tail_ptr === U(i),                         Str("T"),
+//              Str(" "))))
+//      )
     }
   }
 }
