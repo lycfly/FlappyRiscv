@@ -1,6 +1,8 @@
 package boom_v1
 
-import boom_v1.predictor.{BTBParams, GShareBrPredictor, GShareParameters, GSkewBrPredictor, GSkewParameters, TageBrPredictor, TageParameters}
+import boom_v1.predictor.gshare.{GShareBrPredictor, GShareParameters}
+import boom_v1.predictor.tage.{TageBrPredictor, TageParameters}
+import boom_v1.predictor.{BTBParams, GSkewBrPredictor, GSkewParameters}
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
@@ -43,6 +45,7 @@ case class Parameters(
                        gshare: Option[GShareParameters] = None,
                        gskew: Option[GSkewParameters] = None
                      ) {
+  val xLen = 32
   val coreInstBytes = instBits / 8
   val MAX_WAKEUP_DELAY = 3 // unused
   val FETCH_WIDTH = fetchWidth // number of insts we can fetch
