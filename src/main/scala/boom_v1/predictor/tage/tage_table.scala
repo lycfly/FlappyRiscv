@@ -225,12 +225,12 @@ class TageTable(
   val debug_hist_ptr_table=Mem(UInt(width = log2Up(p.VLHR_LENGTH) bits), num_entries)
 
   //history ghistory
-  val idx_csr         = Module(new CircularShiftRegister(index_sz, history_length))
-  val tag_csr1        = Module(new CircularShiftRegister(tag_sz  , history_length))
-  val tag_csr2        = Module(new CircularShiftRegister(tag_sz-1, history_length))
-  val commit_idx_csr  = Module(new CircularShiftRegister(index_sz, history_length))
-  val commit_tag_csr1 = Module(new CircularShiftRegister(tag_sz  , history_length))
-  val commit_tag_csr2 = Module(new CircularShiftRegister(tag_sz-1, history_length))
+  val idx_csr         = (new CircularShiftRegister(index_sz, history_length))
+  val tag_csr1        = (new CircularShiftRegister(tag_sz  , history_length))
+  val tag_csr2        = (new CircularShiftRegister(tag_sz-1, history_length))
+  val commit_idx_csr  = (new CircularShiftRegister(index_sz, history_length))
+  val commit_tag_csr1 = (new CircularShiftRegister(tag_sz  , history_length))
+  val commit_tag_csr2 = (new CircularShiftRegister(tag_sz-1, history_length))
 
   tag_table.io.InitializeIo()
   ubit_table.io.InitializeIo()
@@ -255,14 +255,14 @@ class TageTable(
     }
     else
     {
-      var res = UInt(0,clen)
-      var remaining = input.toUInt
+      var res = U(0,clen bits)
+      var remaining = input
       for (i <- 0 to hlen-1 by clen)
       {
         val len = if (i + clen > hlen ) (hlen - i) else clen
         require(len > 0)
-        res = res(clen-1,0) ^ remaining(len-1,0)
-        remaining = remaining >> UInt(len)
+        res = res(clen-1 downto 0) ^ remaining(len-1 downto 0)
+        remaining = remaining >> U(len)
       }
       res
     }
@@ -271,20 +271,20 @@ class TageTable(
   private def IdxHash (addr: UInt) =
   {
     val idx =
-      ((addr >> UInt(log2Up(fetch_width*coreInstBytes))) ^
+      ((addr >> U(log2Up(fetch_width*p.coreInstBytes))) ^
         idx_csr.io.next)
 
-    idx(index_sz-1,0)
+    idx(index_sz-1 downto 0)
   }
 
   private def TagHash (addr: UInt) =
   {
     // the tag is computed by pc[n:0] ^ CSR1[n:0] ^ (CSR2[n-1:0]<<1).
     val tag_hash =
-      (addr >> UInt(log2Up(fetch_width*coreInstBytes))) ^
+      (addr >> U(log2Up(fetch_width*p.coreInstBytes))) ^
         tag_csr1.io.next ^
-        (tag_csr2.io.next << UInt(1))
-    tag_hash(tag_sz-1,0)
+        (tag_csr2.io.next << U(1))
+    tag_hash(tag_sz-1 downto 0)
   }
 
   //------------------------------------------------------------
@@ -301,16 +301,16 @@ class TageTable(
   tag_table.io.stall := stall
 
   val s2_tag      = tag_table.io.s2_r_out
-  val bp2_tag_hit = s2_tag === RegEnable(RegEnable(p_tag, !stall), !stall)
+  val bp2_tag_hit = s2_tag === RegNextWhen(RegNextWhen(p_tag, !stall), !stall)
 
   io.bp2_resp.valid       := bp2_tag_hit
-  io.bp2_resp.bits.takens := counter_table.io.s2_r_out
-  io.bp2_resp.bits.index  := RegEnable(RegEnable(p_idx, !stall), !stall)(index_sz-1,0)
-  io.bp2_resp.bits.tag    := RegEnable(RegEnable(p_tag, !stall), !stall)(tag_sz-1,0)
+  io.bp2_resp.payload.takens := counter_table.io.s2_r_out
+  io.bp2_resp.payload.index  := RegNextWhen(RegNextWhen(p_idx(index_sz-1 downto 0), !stall), !stall)
+  io.bp2_resp.payload.tag    := RegNextWhen(RegNextWhen(p_tag(tag_sz-1 downto 0), !stall), !stall)
 
-  io.bp2_resp.bits.idx_csr  := idx_csr.io.value
-  io.bp2_resp.bits.tag_csr1 := tag_csr1.io.value
-  io.bp2_resp.bits.tag_csr2 := tag_csr2.io.value
+  io.bp2_resp.payload.idx_csr  := idx_csr.io.value
+  io.bp2_resp.payload.tag_csr1 := tag_csr1.io.value
+  io.bp2_resp.payload.tag_csr2 := tag_csr2.io.value
 
   //------------------------------------------------------------
   // Update (Branch Resolution)
@@ -323,17 +323,18 @@ class TageTable(
     tag_csr1.io.rollback(commit_tag_csr1.io.value, and_shift=Bool(false))
     tag_csr2.io.rollback(commit_tag_csr2.io.value, and_shift=Bool(false))
   }
-    .elsewhen (io.br_resolution.valid && io.br_resolution.bits.mispredict)
+    .elsewhen (io.br_resolution.valid && io.br_resolution.payload.mispredict)
     {
       val resp_info = new TageResp(
         fetch_width = fetch_width,
         num_tables = num_tables,
         max_history_length = max_history_length,
         max_index_sz = log2Up(max_num_entries),
-        max_tag_sz = max_tag_sz).fromBits(
-        io.br_resolution.bits.info)
+        max_tag_sz = max_tag_sz)
+      resp_info.assignFromBits(
+        io.br_resolution.payload.info.asBits)
 
-      val new_bit = io.br_resolution.bits.taken
+      val new_bit = io.br_resolution.payload.taken
       val evict_bit = resp_info.evict_bits(id)
 
       idx_csr.io.rollback (resp_info.idx_csr (id), and_shift=Bool(true), new_bit, evict_bit)
@@ -342,7 +343,7 @@ class TageTable(
     }
     .elsewhen (io.bp2_update_history.valid)
     {
-      val bp2_taken = io.bp2_update_history.bits.taken
+      val bp2_taken = io.bp2_update_history.payload.taken
       val bp2_evict = io.bp2_update_csr_evict_bit
       idx_csr.io.shift (bp2_taken, bp2_evict)
       tag_csr1.io.shift(bp2_taken, bp2_evict)
@@ -352,11 +353,11 @@ class TageTable(
   //------------------------------------------------------------
   // Update Commit-CSRs (Commit)
 
-  val debug_folded_com_hist = Fold(io.debug_ghistory_commit_copy(history_length-1,0), index_sz)
+  val debug_folded_com_hist = Fold(io.debug_ghistory_commit_copy(history_length-1 downto 0), index_sz)
   when (io.commit_csr_update.valid)
   {
-    val com_taken = io.commit_csr_update.bits.new_bit
-    val com_evict = io.commit_csr_update.bits.evict_bit
+    val com_taken = io.commit_csr_update.payload.new_bit
+    val com_evict = io.commit_csr_update.payload.evict_bit
     commit_idx_csr.io.shift (com_taken, com_evict)
     commit_tag_csr1.io.shift(com_taken, com_evict)
     commit_tag_csr2.io.shift(com_taken, com_evict)
@@ -374,39 +375,39 @@ class TageTable(
 
   when (io.allocate.valid)
   {
-    val a_idx = io.allocate.bits.index(index_sz-1,0)
+    val a_idx = io.allocate.payload.index(index_sz-1 downto 0)
 
     ubit_table.io.allocate(a_idx)
-    tag_table.io.write(a_idx, io.allocate.bits.tag(tag_sz-1,0))
+    tag_table.io.write(a_idx, io.allocate.payload.tag(tag_sz-1 downto 0))
 
     counter_table.io.update.valid                 := Bool(true)
-    counter_table.io.update.bits.index            := a_idx
-    counter_table.io.update.bits.executed         := io.allocate.bits.executed.toBools
-    counter_table.io.update.bits.was_mispredicted := Bool(true)
-    counter_table.io.update.bits.takens           := io.allocate.bits.taken.toBools
-    counter_table.io.update.bits.do_initialize    := Bool(true)
+    counter_table.io.update.payload.index            := a_idx
+    counter_table.io.update.payload.executed         := io.allocate.payload.executed.asBools
+    counter_table.io.update.payload.was_mispredicted := Bool(true)
+    counter_table.io.update.payload.takens           := io.allocate.payload.taken.asBools
+    counter_table.io.update.payload.do_initialize    := Bool(true)
 
-    debug_pc_table(a_idx) := io.allocate.bits.debug_pc
-    debug_hist_ptr_table(a_idx) := io.allocate.bits.debug_hist_ptr(history_length-1,0)
+    debug_pc_table(a_idx) := io.allocate.payload.debug_pc
+    debug_hist_ptr_table(a_idx) := io.allocate.payload.debug_hist_ptr(history_length-1 downto 0)
 
-    assert (a_idx < UInt(num_entries), "[TageTable] out of bounds index on allocation")
+    assert (a_idx < U(num_entries), "[TageTable] out of bounds index on allocation")
   }
     .elsewhen (io.update_counters.valid)
     {
       counter_table.io.update.valid                 := Bool(true)
-      counter_table.io.update.bits.index            := io.update_counters.bits.index
-      counter_table.io.update.bits.executed         := io.update_counters.bits.executed.toBools
-      counter_table.io.update.bits.was_mispredicted := io.update_counters.bits.mispredicted
-      counter_table.io.update.bits.takens           := io.update_counters.bits.taken.toBools
-      counter_table.io.update.bits.do_initialize    := Bool(false)
+      counter_table.io.update.payload.index            := io.update_counters.payload.index
+      counter_table.io.update.payload.executed         := io.update_counters.payload.executed.asBools
+      counter_table.io.update.payload.was_mispredicted := io.update_counters.payload.mispredicted
+      counter_table.io.update.payload.takens           := io.update_counters.payload.taken.asBools
+      counter_table.io.update.payload.do_initialize    := Bool(false)
     }
 
   when (io.update_usefulness.valid)
   {
-    ubit_table.io.update(io.update_usefulness.bits.index(index_sz-1,0), io.update_usefulness.bits.inc)
+    ubit_table.io.update(io.update_usefulness.payload.index(index_sz-1 downto 0), io.update_usefulness.payload.inc)
   }
 
-  val ub_read_idx = io.usefulness_req_idx(index_sz-1,0)
+  val ub_read_idx = io.usefulness_req_idx(index_sz-1 downto 0)
   ubit_table.io.s0_read_idx := ub_read_idx
   io.usefulness_resp := ubit_table.io.s2_is_useful
 
