@@ -1,13 +1,16 @@
 package boom_v1.predictor
 
 import boom_v1.Parameters
+import boom_v1.RISCVConstants.{ComputeBranchTarget, ComputeJALTarget}
 import boom_v1.Utils.PriorityEncoder
+import boom_v1.decode.BranchDecode
 import boom_v1.exec.BranchUnitResp
 import boom_v1.fetch.FrontendResp
 import boom_v1.predictor.boom.{BpdResp, BrPredictor, BrobBackendIo, NullBrPredictor, RandomBrPredictor}
 import boom_v1.predictor.gshare.{GShareBrPredictor, SimpleGShareBrPredictor, SimpleGShareParameters}
 import boom_v1.predictor.tage.TageBrPredictor
 import boom_v1.predictor.gskew.GSkewBrPredictor
+import boom_v1.Utils.PriorityEncoder
 import spinal.core._
 import spinal.lib._
 import spinal.lib.PriorityMux
@@ -185,9 +188,9 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Mo
     is_jal(i) := bpd_decoder.io.is_jal  && io.imem_resp.payload.mask(i)
     is_jr(i)  := bpd_decoder.io.is_jalr && io.imem_resp.payload.mask(i)
 
-    val pc = aligned_pc + UInt(i << 2)
-    br_targs(i)  := ComputeBranchTarget(pc, inst, xLen, coreInstBytes)
-    jal_targs(i) := ComputeJALTarget(pc, inst, xLen, coreInstBytes)
+    val pc = aligned_pc + U(i << 2)
+    br_targs(i)  := ComputeBranchTarget(pc, inst, p.xLen, p.coreInstBytes)
+    jal_targs(i) := ComputeJALTarget(pc, inst, p.xLen, p.coreInstBytes)
   }
 
 
@@ -207,12 +210,12 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Mo
   // If the BPD defers (bpd_valid == false), then the BTB's
   // branch prediction stand.
 
-  val bpd_predictions  = is_br.toBits & bpd_bits.takens
+  val bpd_predictions  = is_br.asBits & bpd_bits.takens.asBits
   val bpd_br_taken     = bpd_predictions.orR && bpd_valid
   val bpd_br_idx       = PriorityEncoder(bpd_predictions)
   val bpd_jal_val      = is_jal.reduce(_|_)
   val bpd_jr_val       = is_jr.reduce(_|_)
-  val bpd_jal_idx      = PriorityEncoder(is_jal.toBits)
+  val bpd_jal_idx      = PriorityEncoder(is_jal.asBits)
   val bpd_br_beats_jal = bpd_br_taken && (!bpd_jal_val || (bpd_br_idx < bpd_jal_idx))
   val bpd_req_idx      = Mux(bpd_br_beats_jal, bpd_br_idx, bpd_jal_idx)
   val bpd_req_target   = Mux(bpd_br_beats_jal, br_targs(bpd_br_idx), jal_targs(bpd_jal_idx))

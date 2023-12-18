@@ -1,7 +1,6 @@
 package boom_v1
 
 import EasonLib.Utils.Enum.EasonEnum
-import boom_v1.decode.MaskedDC
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
@@ -111,19 +110,19 @@ object RISCVConstants
   def GetUop(inst: UInt): UInt = inst(6 downto 0)
   def GetRd (inst: UInt): UInt = inst(RD_MSB downto RD_LSB)
   def GetRs1(inst: UInt): UInt = inst(RS1_MSB downto RS1_LSB)
-  def IsCall(inst: UInt): Bool = (inst === Opcodes.JAL ||
-    inst === Opcodes.JALR) && GetRd(inst) === RA
+  def IsCall(inst: UInt): Bool = (inst === Instructions.JAL ||
+    inst === Instructions.JALR) && GetRd(inst) === RA
   def IsReturn(inst: UInt): Bool = GetUop(inst) === jalr_opc && GetRd(inst) === X0 && GetRs1(inst) === RA
 
   def ComputeBranchTarget(pc: UInt, inst: UInt, xlen: Int, coreInstBytes: Int): UInt =
   {
-    val b_imm32 = Cat(Fill(20,inst(31)), inst(7), inst(30,25), inst(11,8), UInt(0,1))
-    ((pc + Sext(b_imm32, xlen)).asSInt & SInt(-coreInstBytes)).asUInt
+    val b_imm32 = Cat((inst(31)#*20), inst(7), inst(30 downto 25), inst(11 downto 8), U(0,1 bits))
+    ((pc.asSInt + (b_imm32.asSInt.resize(xlen))) & S(-coreInstBytes, xlen bits)).asUInt
   }
   def ComputeJALTarget(pc: UInt, inst: UInt, xlen: Int, coreInstBytes: Int): UInt =
   {
-    val j_imm32 = Cat(Fill(12,inst(31)), inst(19,12), inst(20), inst(30,25), inst(24,21), UInt(0,1))
-    ((pc + Sext(j_imm32, xlen)).asSInt & SInt(-coreInstBytes)).asUInt
+    val j_imm32 = Cat((inst(31)#*12), inst(19 downto 12), inst(20), inst(30 downto 25), inst(24 downto 21), U(0,1 bits))
+    ((pc.asSInt + (j_imm32.asSInt.resize(xlen))) & S(-coreInstBytes, xlen bits)).asUInt
   }
 }
 
@@ -163,66 +162,3 @@ trait MemoryOpConstants {
 }
 
 
-//
-//object Opcodes {
-//  val ADD = M"0000000----------000-----0110011"
-//  val SUB = M"0100000----------000-----0110011"
-//  val SLT = M"0000000----------010-----0110011"
-//  val SLTU = M"0000000----------011-----0110011"
-//  val XOR = M"0000000----------100-----0110011"
-//  val OR = M"0000000----------110-----0110011"
-//  val AND = M"0000000----------111-----0110011"
-//  val ADDI = M"-----------------000-----0010011"
-//  val SLTI = M"-----------------010-----0010011"
-//  val SLTIU = M"-----------------011-----0010011"
-//  val XORI = M"-----------------100-----0010011"
-//  val ORI = M"-----------------110-----0010011"
-//  val ANDI = M"-----------------111-----0010011"
-//  val LUI = M"-------------------------0110111"
-//  val AUIPC = M"-------------------------0010111"
-//
-//  val SLLI = M"0000000----------001-----0010011"
-//  val SRLI = M"0000000----------101-----0010011"
-//  val SRAI = M"0100000----------101-----0010011"
-//  val SLL = M"0000000----------001-----0110011"
-//  val SRL = M"0000000----------101-----0110011"
-//  val SRA = M"0100000----------101-----0110011"
-//
-//  val JAL = M"-------------------------1101111"
-//  val JALR = M"-----------------000-----1100111"
-//  val BEQ = M"-----------------000-----1100011"
-//  val BNE = M"-----------------001-----1100011"
-//  val BLT = M"-----------------100-----1100011"
-//  val BGE = M"-----------------101-----1100011"
-//  val BLTU = M"-----------------110-----1100011"
-//  val BGEU = M"-----------------111-----1100011"
-//
-//  val LB = M"-----------------000-----0000011"
-//  val LH = M"-----------------001-----0000011"
-//  val LW = M"-----------------010-----0000011"
-//  val LBU = M"-----------------100-----0000011"
-//  val LHU = M"-----------------101-----0000011"
-//  val SB = M"-----------------000-----0100011"
-//  val SH = M"-----------------001-----0100011"
-//  val SW = M"-----------------010-----0100011"
-//
-//  val CSRRW = M"-----------------001-----1110011"
-//  val CSRRS = M"-----------------010-----1110011"
-//  val CSRRC = M"-----------------011-----1110011"
-//  val CSRRWI = M"-----------------101-----1110011"
-//  val CSRRSI = M"-----------------110-----1110011"
-//  val CSRRCI = M"-----------------111-----1110011"
-//
-//  val ECALL = M"00000000000000000000000001110011"
-//  val EBREAK = M"00000000000100000000000001110011"
-//  val MRET = M"00110000001000000000000001110011"
-//
-//  val MUL = M"0000001----------000-----0110011"
-//  val MULH = M"0000001----------001-----0110011"
-//  val MULHSU = M"0000001----------010-----0110011"
-//  val MULHU = M"0000001----------011-----0110011"
-//  val DIV = M"0000001----------100-----0110011"
-//  val DIVU = M"0000001----------101-----0110011"
-//  val REM = M"0000001----------110-----0110011"
-//  val REMU = M"0000001----------111-----0110011"
-//}
