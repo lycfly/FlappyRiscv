@@ -136,7 +136,7 @@ abstract class BrPredictor(fetch_width: Int, val history_length: Int)(implicit p
     // Arrives same cycle as redirecting the front-end -- otherwise, the ghistory would be wrong if it came later!
     val flush = in Bool()
     // privilege-level (allow predictor to change behavior in different privilege modes).
-    val status_prv = in UInt(width = 2 bits) // TODO lyc: 2 may be not correct?
+    val status_prv = in UInt(width = p.PRV_SZ bits) // TODO lyc: 2 may be not correct?
   }
 
   // the (speculative) global history wire (used for accessing the branch predictor state).

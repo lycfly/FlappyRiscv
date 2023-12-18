@@ -65,6 +65,14 @@ object BranchType extends SpinalEnum {
   // Branch Type
   val BR_N, BR_NE, BR_EQ, BR_GE, BR_GEU, BR_LT, BR_LTU, BR_J, BR_JR = newElement() // Jump Register
 }
+object MSKType extends SpinalEnum {
+  // Mask Type
+  val MSK_B, MSK_H, MSK_W, MSK_D, MSK_BU, MSK_HU, MSK_WU = newElement()
+}
+object MEMType extends SpinalEnum {
+  // Mem Type
+  val MT_B, MT_H, MT_W, MT_D, MT_BU, MT_HU, MT_WU = newElement()
+}
 
 object RS1Type extends SpinalEnum {
   // RS1 Operand Select Signal
@@ -89,6 +97,14 @@ object IMMType extends SpinalEnum {
   val IS_J = newElement() // UJ-Type (J/JAL)
 }
 
+object CSRType extends SpinalEnum {
+  val N = newElement()
+  val W = newElement()
+  val S = newElement()
+  val C = newElement()
+  val I = newElement()
+  val R = newElement()
+}
 
 class MicroOp(implicit p: Parameters) extends Bundle {
   val valid = Bool() // is this uop valid? or has it been masked out,

@@ -1,8 +1,10 @@
 package boom_v1
 
-import boom_v1.predictor.gshare.{GShareBrPredictor, GShareParameters}
+import boom_v1.predictor.gshare.{GShareBrPredictor, GShareParameters, SimpleGShareBrPredictor, SimpleGShareParameters}
+import boom_v1.predictor.gskew.{GSkewBrPredictor, GSkewParameters}
 import boom_v1.predictor.tage.{TageBrPredictor, TageParameters}
-import boom_v1.predictor.{BTBParams, GSkewBrPredictor, GSkewParameters}
+import boom_v1.predictor.BTBParams
+import boom_v1.predictor.boom.RandomBrPredictor
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
@@ -10,12 +12,12 @@ import spinal.lib._
 
 import scala.util.Random
 import scala.language.postfixOps
+import scala.sys.runtime
 
 case class Parameters(
                        DEBUG_PRINTF: Boolean = false,
 
                        instBits: Int = 32,
-                       coreMaxAddrBits: Int = 32,
                        fetchWidth: Int = 2,
                        decodeWidth: Int = 1,
                        issueWidth: Int = 1,
@@ -27,7 +29,6 @@ case class Parameters(
                        numPhysRegisters: Int = 110,
                        maxBrCount: Int = 4,
                        fetchBufferSz: Int = 4,
-                       vaddrBits: Int = 32,
 
                        btb: Option[BTBParams] = Some(BTBParams()),
 
@@ -43,10 +44,12 @@ case class Parameters(
                        enableBpdUSModeHistory: Boolean = false,
                        tage: Option[TageParameters] = None,
                        gshare: Option[GShareParameters] = None,
-                       gskew: Option[GSkewParameters] = None
+                       gskew: Option[GSkewParameters] = None,
+                       simple_gshare: Boolean = false,
+                       random_bpd: Boolean = false,
                      ) {
   val xLen = 32
-  val coreInstBytes = instBits / 8
+  val PRV_SZ = 2
   val MAX_WAKEUP_DELAY = 3 // unused
   val FETCH_WIDTH = fetchWidth // number of insts we can fetch
   val DECODE_WIDTH = decodeWidth
@@ -88,12 +91,60 @@ case class Parameters(
   require(isPow2(NUM_LSU_ENTRIES))
   require((NUM_LSU_ENTRIES - 1) > DECODE_WIDTH)
 
+/** Tile parameters */
+  val usingVM = true
+  val usingUser = false || usingVM
+  val usingDebug = false
+  val usingRoCC = false
+  val usingBTB = btb.isDefined && btb.get.nEntries > 0
+  val usingPTW = usingVM
+//  val usingDataScratchpad = dcache.isDefined && tileParams.dataScratchpadBytes > 0
+//  def dcacheArbPorts = 1 + usingVM.toInt + usingDataScratchpad.toInt + tileParams.rocc.size
 
   /** Core parameters */
+//  val usingMulDiv = coreParams.mulDiv.nonEmpty
+//  val usingFPU = coreParams.fpu.nonEmpty
+//  val usingAtomics = coreParams.useAtomics
+//  val usingCompressed = coreParams.useCompressed
+
+  val coreInstBits = instBits
+  val coreInstBytes = coreInstBits / 8
+  val coreDataBits = xLen
+  val coreDataBytes = coreDataBits / 8
+
+  val coreDCacheReqTagBits = 6
+//  val dcacheReqTagBits = coreDCacheReqTagBits + log2Up(dcacheArbPorts)
   def instBytes: Int = instBits / 8
 
   def fetchBytes: Int = fetchWidth * instBytes
 
+  def pgIdxBits = 12
+
+  def PAddrBits = 32
+
+  def PgLevels = if (xLen == 64) 3 /* Sv39 */
+                      else 2 /* Sv32 */
+  def ASIdBits = 7
+  def pgLevelBits = 10 - log2Up(xLen / 32)
+
+  def vaddrBits = pgIdxBits + PgLevels * pgLevelBits
+
+  val paddrBits = 32 //p(PAddrBits)
+
+  def ppnBits = paddrBits - pgIdxBits
+
+  def vpnBits = vaddrBits - pgIdxBits
+
+//  val pgLevels = p(PgLevels)
+//  val asIdBits = p(ASIdBits)
+  val vpnBitsExtended = vpnBits + (vaddrBits < xLen).toInt
+  val vaddrBitsExtended = vpnBitsExtended + pgIdxBits
+  val coreMaxAddrBits = paddrBits max vaddrBitsExtended
+  val maxPAddrBits = xLen match {
+    case 32 => 34;
+    case 64 => 50
+  }
+  require(paddrBits <= maxPAddrBits)
   //************************************
   // Branch Prediction
 
@@ -133,14 +184,14 @@ case class Parameters(
     GLOBAL_HISTORY_LENGTH = gshareParams.get.history_length
     BPD_INFO_SIZE = GShareBrPredictor.GetRespInfoSize(this, GLOBAL_HISTORY_LENGTH)
   }
-//  else if (.enabled) {
-//    GLOBAL_HISTORY_LENGTH = p(SimpleGShareKey).history_length
-//    BPD_INFO_SIZE = SimpleGShareBrPredictor.GetRespInfoSize(p)
-//  }
-//  else if (p(RandomBpdKey).enabled) {
-//    GLOBAL_HISTORY_LENGTH = 1
-//    BPD_INFO_SIZE = RandomBrPredictor.GetRespInfoSize(p)
-//  }
+  else if (simple_gshare) {
+    GLOBAL_HISTORY_LENGTH = SimpleGShareParameters().history_length
+    BPD_INFO_SIZE = SimpleGShareBrPredictor.GetRespInfoSize(this)
+  }
+  else if (random_bpd) {
+    GLOBAL_HISTORY_LENGTH = 1
+    BPD_INFO_SIZE = RandomBrPredictor.GetRespInfoSize(this)
+  }
   else {
     require(!ENABLE_BRANCH_PREDICTOR) // set branch predictor in configs.scala
     BPD_INFO_SIZE = 1

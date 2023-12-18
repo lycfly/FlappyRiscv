@@ -1,33 +1,58 @@
 package boom_v1
 
 import EasonLib.Utils.Enum.EasonEnum
+import boom_v1.decode.MaskedDC
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
+object ScalarOpConstants extends ScalarOpConstants
+
+object BitMap {
+  def apply(str: String) = {
+    val strRmb = str.replace("b", "")
+    val strcleaned = strRmb.replace("?", "-")
+    val strCleaned = strcleaned.replace("_", "")
+
+    for (c <- strCleaned) assert(c == '1' || c == '0' || c == '-', s"""M"$str" is not correctly formated.""")
+
+    val careAbout = strCleaned.map(c => if (c == '-') '0' else '1')
+    val value = strCleaned.map(c => if (c == '-') '0' else c)
+    new MaskedLiteral(BigInt(value, 2), BigInt(careAbout, 2), strCleaned.length())
+  }
+}
+
+//class BitMap(override val value: BigInt, override val careAbout: BigInt, override val width: Int) extends MaskedLiteral(value, careAbout, width)
+
+object MaskedDC {
+  def apply(width: Int) = MaskedLiteral(("-" * width))
+}
 
 trait ScalarOpConstants {
-  val X = BitPat("b?")
-  val Y = BitPat("b1")
-  val N = BitPat("b0")
+  val X = MaskedLiteral("-")
+  val Y = MaskedLiteral("1")
+  val N = MaskedLiteral("0")
 
   //************************************
   // Extra Constants
-
+  val uopX = MaskedDC(UOPs().getBitsWidth)
+  val FU_X = MaskedDC(FUType().getBitsWidth)
+  val IS_X = MaskedDC(IMMType().getBitsWidth)
+  val MSK_X = MaskedDC(MSKType().getBitsWidth)
+  val CSR_X = MaskedDC(CSRType().getBitsWidth)
 
   //************************************
   // Control Signals
 
-  val s_invalid :: s_valid_1 :: s_valid_2 :: Nil = Enum(UInt(), 3)
+//  val s_invalid :: s_valid_1 :: s_valid_2 :: Nil = Enum(UInt(), 3)
+  val s_invalid = U(0, 2 bits)
+  val s_valid_1 = U(1, 2 bits)
+  val s_valid_2 = U(2, 2 bits)
 
   // PC Select Signal
-  val PC_PLUS4 = UInt(0, 2) // PC + 4
-  val PC_BRJMP = UInt(1, 2) // brjmp_target
-  val PC_JALR = UInt(2, 2) // jump_reg_target
-
-
-
-
+  val PC_PLUS4 = U(0, 2 bits) // PC + 4
+  val PC_BRJMP = U(1, 2 bits) // brjmp_target
+  val PC_JALR = U(2, 2 bits) // jump_reg_target
 
   // Register File Write Enable Signal
   val REN_0 = Bool(false)
@@ -45,14 +70,13 @@ trait ScalarOpConstants {
   val MEN_1 = Bool(true)
   val MEN_X = Bool(false)
 
-
-
-
   // Decode Stage Control Signals
-  val RT_FIX = UInt(0, 2)
-  val RT_FLT = UInt(1, 2)
-  val RT_PAS = UInt(3, 2) // pass-through (pop1 := lrs1, etc)
-  val RT_X = UInt(2, 2) // not-a-register (but shouldn't get a busy-bit, etc.)
+  val RT_FIX = U(0, 2 bits)
+  val RT_FLT = U(1, 2 bits)
+  val RT_PAS = U(3, 2 bits) // pass-through (pop1 := lrs1, etc)
+//  val RT_X = U(2, 2 bits) // not-a-register (but shouldn't get a busy-bit, etc.)
+val RT_X = MaskedLiteral("10") // not-a-register (but shouldn't get a busy-bit, etc.)
+
   // TODO rename RT_NAR
 }
 object RISCVConstants
@@ -104,66 +128,101 @@ object RISCVConstants
 }
 
 
+object MemoryOpConstants extends MemoryOpConstants
+trait MemoryOpConstants {
+  val NUM_XA_OPS = 9
+  val M_SZ      = 5
+  def M_X       = BitMap("b?????");
 
-object Opcodes {
-  val ADD = M"0000000----------000-----0110011"
-  val SUB = M"0100000----------000-----0110011"
-  val SLT = M"0000000----------010-----0110011"
-  val SLTU = M"0000000----------011-----0110011"
-  val XOR = M"0000000----------100-----0110011"
-  val OR = M"0000000----------110-----0110011"
-  val AND = M"0000000----------111-----0110011"
-  val ADDI = M"-----------------000-----0010011"
-  val SLTI = M"-----------------010-----0010011"
-  val SLTIU = M"-----------------011-----0010011"
-  val XORI = M"-----------------100-----0010011"
-  val ORI = M"-----------------110-----0010011"
-  val ANDI = M"-----------------111-----0010011"
-  val LUI = M"-------------------------0110111"
-  val AUIPC = M"-------------------------0010111"
-
-  val SLLI = M"0000000----------001-----0010011"
-  val SRLI = M"0000000----------101-----0010011"
-  val SRAI = M"0100000----------101-----0010011"
-  val SLL = M"0000000----------001-----0110011"
-  val SRL = M"0000000----------101-----0110011"
-  val SRA = M"0100000----------101-----0110011"
-
-  val JAL = M"-------------------------1101111"
-  val JALR = M"-----------------000-----1100111"
-  val BEQ = M"-----------------000-----1100011"
-  val BNE = M"-----------------001-----1100011"
-  val BLT = M"-----------------100-----1100011"
-  val BGE = M"-----------------101-----1100011"
-  val BLTU = M"-----------------110-----1100011"
-  val BGEU = M"-----------------111-----1100011"
-
-  val LB = M"-----------------000-----0000011"
-  val LH = M"-----------------001-----0000011"
-  val LW = M"-----------------010-----0000011"
-  val LBU = M"-----------------100-----0000011"
-  val LHU = M"-----------------101-----0000011"
-  val SB = M"-----------------000-----0100011"
-  val SH = M"-----------------001-----0100011"
-  val SW = M"-----------------010-----0100011"
-
-  val CSRRW = M"-----------------001-----1110011"
-  val CSRRS = M"-----------------010-----1110011"
-  val CSRRC = M"-----------------011-----1110011"
-  val CSRRWI = M"-----------------101-----1110011"
-  val CSRRSI = M"-----------------110-----1110011"
-  val CSRRCI = M"-----------------111-----1110011"
-
-  val ECALL = M"00000000000000000000000001110011"
-  val EBREAK = M"00000000000100000000000001110011"
-  val MRET = M"00110000001000000000000001110011"
-
-  val MUL = M"0000001----------000-----0110011"
-  val MULH = M"0000001----------001-----0110011"
-  val MULHSU = M"0000001----------010-----0110011"
-  val MULHU = M"0000001----------011-----0110011"
-  val DIV = M"0000001----------100-----0110011"
-  val DIVU = M"0000001----------101-----0110011"
-  val REM = M"0000001----------110-----0110011"
-  val REMU = M"0000001----------111-----0110011"
+  object MEMOP extends SpinalEnum {
+    val M_XRD = newElement(); // int load
+    val M_XWR = newElement(); // int store
+    val M_PFR = newElement(); // prefetch with intent to read
+    val M_PFW = newElement(); // prefetch with intent to write
+    val M_XA_SWAP = newElement();
+    val M_FLUSH_ALL = newElement() // flush all lines
+    val M_XLR = newElement();
+    val M_XSC = newElement();
+    val M_XA_ADD = newElement();
+    val M_XA_XOR = newElement();
+    val M_XA_OR = newElement();
+    val M_XA_AND = newElement();
+    val M_XA_MIN = newElement();
+    val M_XA_MAX = newElement();
+    val M_XA_MINU = newElement();
+    val M_XA_MAXU = newElement();
+    val M_FLUSH = newElement() // write back dirty data and cede R/W permissions
+    val M_PRODUCE = newElement() // write back dirty data and cede W permissions
+    val M_CLEAN = newElement() // write back dirty data and retain R/W permissions
+  }
+  def isAMO(cmd: UInt) = cmd(3) || cmd === MEMOP.M_XA_SWAP.asBits.asUInt
+  def isPrefetch(cmd: UInt) = cmd === MEMOP.M_PFR.asBits.asUInt || cmd === MEMOP.M_PFW.asBits.asUInt
+  def isRead(cmd: UInt) = cmd === MEMOP.M_XRD.asBits.asUInt || cmd === MEMOP.M_XLR.asBits.asUInt || cmd === MEMOP.M_XSC.asBits.asUInt || isAMO(cmd)
+  def isWrite(cmd: UInt) = cmd === MEMOP.M_XWR.asBits.asUInt || cmd === MEMOP.M_XSC.asBits.asUInt || isAMO(cmd)
+  def isWriteIntent(cmd: UInt) = isWrite(cmd) || cmd === MEMOP.M_PFW.asBits.asUInt || cmd === MEMOP.M_XLR.asBits.asUInt
 }
+
+
+//
+//object Opcodes {
+//  val ADD = M"0000000----------000-----0110011"
+//  val SUB = M"0100000----------000-----0110011"
+//  val SLT = M"0000000----------010-----0110011"
+//  val SLTU = M"0000000----------011-----0110011"
+//  val XOR = M"0000000----------100-----0110011"
+//  val OR = M"0000000----------110-----0110011"
+//  val AND = M"0000000----------111-----0110011"
+//  val ADDI = M"-----------------000-----0010011"
+//  val SLTI = M"-----------------010-----0010011"
+//  val SLTIU = M"-----------------011-----0010011"
+//  val XORI = M"-----------------100-----0010011"
+//  val ORI = M"-----------------110-----0010011"
+//  val ANDI = M"-----------------111-----0010011"
+//  val LUI = M"-------------------------0110111"
+//  val AUIPC = M"-------------------------0010111"
+//
+//  val SLLI = M"0000000----------001-----0010011"
+//  val SRLI = M"0000000----------101-----0010011"
+//  val SRAI = M"0100000----------101-----0010011"
+//  val SLL = M"0000000----------001-----0110011"
+//  val SRL = M"0000000----------101-----0110011"
+//  val SRA = M"0100000----------101-----0110011"
+//
+//  val JAL = M"-------------------------1101111"
+//  val JALR = M"-----------------000-----1100111"
+//  val BEQ = M"-----------------000-----1100011"
+//  val BNE = M"-----------------001-----1100011"
+//  val BLT = M"-----------------100-----1100011"
+//  val BGE = M"-----------------101-----1100011"
+//  val BLTU = M"-----------------110-----1100011"
+//  val BGEU = M"-----------------111-----1100011"
+//
+//  val LB = M"-----------------000-----0000011"
+//  val LH = M"-----------------001-----0000011"
+//  val LW = M"-----------------010-----0000011"
+//  val LBU = M"-----------------100-----0000011"
+//  val LHU = M"-----------------101-----0000011"
+//  val SB = M"-----------------000-----0100011"
+//  val SH = M"-----------------001-----0100011"
+//  val SW = M"-----------------010-----0100011"
+//
+//  val CSRRW = M"-----------------001-----1110011"
+//  val CSRRS = M"-----------------010-----1110011"
+//  val CSRRC = M"-----------------011-----1110011"
+//  val CSRRWI = M"-----------------101-----1110011"
+//  val CSRRSI = M"-----------------110-----1110011"
+//  val CSRRCI = M"-----------------111-----1110011"
+//
+//  val ECALL = M"00000000000000000000000001110011"
+//  val EBREAK = M"00000000000100000000000001110011"
+//  val MRET = M"00110000001000000000000001110011"
+//
+//  val MUL = M"0000001----------000-----0110011"
+//  val MULH = M"0000001----------001-----0110011"
+//  val MULHSU = M"0000001----------010-----0110011"
+//  val MULHU = M"0000001----------011-----0110011"
+//  val DIV = M"0000001----------100-----0110011"
+//  val DIVU = M"0000001----------101-----0110011"
+//  val REM = M"0000001----------110-----0110011"
+//  val REMU = M"0000001----------111-----0110011"
+//}
