@@ -3,6 +3,8 @@ import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
+
+import scala.math.log
 object PopCountAtLeast {
   private def two(x: UInt): (Bool, Bool) = x.getWidth match {
     case 1 => (x.asBool, False)
@@ -102,4 +104,60 @@ object LFSR16 {
     when (increment) { lfsr := Cat(lfsr(0)^lfsr(2)^lfsr(3)^lfsr(5), lfsr(width-1 downto 1)) }
     lfsr
   }
+}
+
+object Str
+{
+  def apply(s: String): UInt = {
+    var i = BigInt(0)
+    require(s.forall(validChar _))
+    for (c <- s)
+      i = (i << 8) | c
+    U(i, s.length*8)
+  }
+  def apply(x: Char): UInt = {
+    require(validChar(x))
+    U(x.toInt, 8 bits)
+  }
+  def apply(x: UInt): UInt = apply(x, 10)
+  def apply(x: UInt, radix: Int): UInt = {
+    val rad = U(radix)
+    val w = x.getWidth
+    require(w > 0)
+
+    var q = x
+    var s = digit(q % rad)
+    for (i <- 1 until scala.math.ceil(log(2)/log(radix)*w).toInt) {
+      q = q / rad
+      s = Cat(Mux(Bool(radix == 10) && q === U(0), Str(' '), digit(q % rad)), s).asUInt
+    }
+    s
+  }
+  def apply(x: SInt): UInt = apply(x, 10)
+  def apply(x: SInt, radix: Int): UInt = {
+    val neg = x < S(0)
+    val abs = x.abs
+    if (radix != 10) {
+      Cat(Mux(neg, Str('-'), Str(' ')), Str(abs, radix)).asUInt
+    } else {
+      val rad = U(radix)
+      val w = abs.getWidth
+      require(w > 0)
+
+      var q = abs
+      var s = digit(q % rad)
+      var needSign = neg
+      for (i <- 1 until scala.math.ceil(log(2)/log(radix)*w).toInt) {
+        q = q / rad
+        val placeSpace = q === U(0)
+        val space = Mux(needSign, Str('-'), Str(' '))
+        needSign = needSign && !placeSpace
+        s = Cat(Mux(placeSpace, space, digit(q % rad)), s).asUInt
+      }
+      Cat(Mux(needSign, Str('-'), Str(' ')), s).asUInt
+    }
+  }
+
+  private def digit(d: UInt): UInt = Mux(d < U(10), Str('0')+d, Str(('a'-10).toChar)+d)(7 downto 0)
+  private def validChar(x: Char) = x == (x & 0xFF)
 }
