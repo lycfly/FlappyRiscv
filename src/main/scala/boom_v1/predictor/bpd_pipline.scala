@@ -224,39 +224,39 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Mo
 
   // For the particular instruction the BTB predicted, does the BPD agree with the direction?
   // (this is only valid if the BTB is predicting a branch.)
-  val bpd_agrees_with_btb = !(IsIdxAMatch(io.btb_resp.bits.bridx, bpd_predictions) ^
-    io.btb_resp.bits.taken)
+  val bpd_agrees_with_btb = !(IsIdxAMatch(io.btb_resp.payload.bridx.asUInt, bpd_predictions.asUInt) ^
+    io.btb_resp.payload.taken)
 
   // bpd will make a redirection request (either for a br or jal)
   // for "taking" a branch or JAL.
-  val bpd_br_fire = Wire(init = Bool(false))
-  val bpd_jal_fire = Wire(init = Bool(false))
+  val bpd_br_fire = Bool(false)
+  val bpd_jal_fire = Bool(false)
   // If the BTB predicted taken, and the BPD disagrees and believes no branch
   // is taken, we must instead redirect the FrontEnd to fetch the "next packet"
   // in program order (PC+4-ish, if you will).
-  val bpd_nextline_fire = Wire(init = Bool(false))
-  val nextline_pc = aligned_pc + UInt(fetch_width*coreInstBytes)
+  val bpd_nextline_fire = Bool(false)
+  val nextline_pc = aligned_pc + U(fetch_width*p.coreInstBytes)
   // BTB provides a suggested "valid instruction" mask, based on its prediction.
   // Should we override its mask?
-  val override_btb = Wire(init = Bool(false))
+  val override_btb = Bool(false)
 
   // Is the predicted instruction a control-flow instruction?
   // Used to invalidate BTB entries due to it predicting on
   // a non-branch/non-jump instruction.
-  val is_cfi = Wire(init = Bool(true))
+  val is_cfi = Bool(true)
 
   // does the index match on a true bit in the mask?
   def IsIdxAMatch(idx: UInt, mask: UInt) : Bool =
   {
     mask(idx)
   }
-  val btb_predicted_br          = IsIdxAMatch(io.btb_resp.bits.bridx, is_br.toBits)
-  val btb_predicted_br_taken    = btb_predicted_br && io.btb_resp.bits.taken
-  val btb_predicted_br_nottaken = btb_predicted_br && !io.btb_resp.bits.taken
-  val btb_predicted_jump        = IsIdxAMatch(io.btb_resp.bits.bridx, is_jal.toBits | is_jr.toBits)
-  val btb_predicted_jal         = IsIdxAMatch(io.btb_resp.bits.bridx, is_jal.toBits)
+  val btb_predicted_br          = IsIdxAMatch(io.btb_resp.payload.bridx.asUInt, is_br.asBits.asUInt)
+  val btb_predicted_br_taken    = btb_predicted_br && io.btb_resp.payload.taken
+  val btb_predicted_br_nottaken = btb_predicted_br && !io.btb_resp.payload.taken
+  val btb_predicted_jump        = IsIdxAMatch(io.btb_resp.payload.bridx.asUInt, is_jal.asBits.asUInt | is_jr.asBits.asUInt)
+  val btb_predicted_jal         = IsIdxAMatch(io.btb_resp.payload.bridx.asUInt, is_jal.asBits.asUInt)
 
-  val btb_predicted_wrong_jal_target = btb_predicted_jal && io.btb_resp.bits.target =/= jal_targs(bpd_jal_idx)
+  val btb_predicted_wrong_jal_target = btb_predicted_jal && io.btb_resp.payload.target =/= jal_targs(bpd_jal_idx)
 
   when (io.btb_resp.valid)
   {
@@ -269,19 +269,19 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Mo
 
     when (btb_predicted_jump) // both JAL and JRs
     {
-      val btb_nt = !io.btb_resp.bits.taken
-      bpd_br_fire  := bpd_br_beats_jal && bpd_br_taken && (bpd_br_idx < io.btb_resp.bits.bridx)
+      val btb_nt = !io.btb_resp.payload.taken
+      bpd_br_fire  := bpd_br_beats_jal && bpd_br_taken && (bpd_br_idx < io.btb_resp.payload.bridx.asUInt)
       bpd_jal_fire := !bpd_br_beats_jal && bpd_jal_val &&
-        ((bpd_jal_idx < io.btb_resp.bits.bridx) || btb_nt || btb_predicted_wrong_jal_target)
+        ((bpd_jal_idx < io.btb_resp.payload.bridx.asUInt) || btb_nt || btb_predicted_wrong_jal_target)
 
       when (io.imem_resp.valid)
       {
-        when (!io.btb_resp.bits.taken)
+        when (!io.btb_resp.payload.taken)
         {
-          val btb_predicted_jr = IsIdxAMatch(io.btb_resp.bits.bridx, is_jr.toBits)
+          val btb_predicted_jr = IsIdxAMatch(io.btb_resp.payload.bridx.asUInt, is_jr.asBits.asUInt)
           // if JR but predicted not TAKEN, do nothing and let BrUnit fix mispredicton.
           assert (bpd_br_fire ||
-            (bpd_jal_fire && (bpd_jal_idx <= io.btb_resp.bits.bridx)) ||
+            (bpd_jal_fire && (bpd_jal_idx <= io.btb_resp.payload.bridx.asUInt)) ||
             btb_predicted_jr,
             "[bpd_pipeline] BTB predicted a jump but didn't take it, and we are failing to correct it.")
         }
@@ -298,13 +298,13 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Mo
         //       c. a later jump is present (bpd_jal_fire)
 
         // does the bpd predict the branch is taken too? (assuming bpd_valid)
-        val bpd_agrees_with_btb = bpd_predictions(io.btb_resp.bits.bridx)
+        val bpd_agrees_with_btb = bpd_predictions(io.btb_resp.payload.bridx.asUInt)
 
         bpd_jal_fire := !bpd_br_beats_jal && bpd_jal_val &&
-          ((bpd_jal_idx < io.btb_resp.bits.bridx) ||
+          ((bpd_jal_idx < io.btb_resp.payload.bridx.asUInt) ||
             (bpd_valid && !bpd_agrees_with_btb))
         bpd_br_fire  := bpd_br_beats_jal && bpd_br_taken &&
-          (bpd_br_idx < io.btb_resp.bits.bridx ||  // earlier than BTB's branch
+          (bpd_br_idx < io.btb_resp.payload.bridx.asUInt ||  // earlier than BTB's branch
             (bpd_valid && !bpd_agrees_with_btb))     // taken later
         //                         (bpd_valid && !bpd_agrees_with_btb && io.btb_resp.bits.bridx =/= bpd_br_idx)) // taken later
         // than BTB's branch
@@ -353,7 +353,7 @@ class BranchPredictionStage(fetch_width: Int)(implicit p: Parameters) extends Mo
       bpd_jal_fire := bpd_jal_val && !bpd_br_fire
     }
 
-  assert (PopCount(Vec(bpd_br_fire, bpd_jal_fire, bpd_nextline_fire)) <= UInt(1),
+  assert (CountOne(Vec(bpd_br_fire, bpd_jal_fire, bpd_nextline_fire)) <= U(1),
     "[bpd_pipeline] mutually-exclusive signals firing")
 
 
