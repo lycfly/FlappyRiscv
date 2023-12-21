@@ -11,12 +11,14 @@ import boom_v1.Instructions._
 import boom_v1.MSKType._
 import boom_v1.MemoryOpConstants._
 import boom_v1.ScalarOpConstants._
-import boom_v1.{CSRType, FUType, IMMType, MEMType, MaskedDC, Parameters, UOPs}
+import boom_v1.{CSRType, FUType, IMMType, MEMType, MaskedDC, MicroOp, Parameters, UOPs}
 import boom_v1.UOPs._
 import boom_v1.MemoryOpConstants.MEMOP._
 import spinal.core._
 import spinal.lib._
 import boom_v1.decode.DecodeLogic
+import boom_v1.fetch.FetchBundle
+import boom_v1.predictor.BranchPredictionResp
 //import rocket.Instructions._
 //import rocket.{CSR,Causes}
 //import util.uintToMaskedLiteral
@@ -230,20 +232,20 @@ import boom_v1.decode.DecodeLogic
   {
     // scalastyle:off
     val table: Array[(MaskedLiteral, List[MaskedLiteral])] = Array(
-      //                                                          frs3_en                                wakeup_delay
-      //                                                          |  imm sel                             |        bypassable (aka, known/fixed latency)
-      //                                                          |  |     is_load                       |        |  br/jmp
-      //     is val inst?                         rs1 regtype     |  |     |  is_store                   |        |  |  is jal
-      //     |  is fp inst?                       |       rs2 type|  |     |  |  is_amo                  |        |  |  |  allocate_brtag
-      //     |  |  is dst single-prec?            |       |       |  |     |  |  |  is_fence             |        |  |  |  |
-      //     |  |  |  micro-opcode                |       |       |  |     |  |  |  |  is_fencei         |        |  |  |  |
-      //     |  |  |  |           func    dst     |       |       |  |     |  |  |  |  |  mem    mem     |        |  |  |  |  is unique? (clear pipeline for it)
-      //     |  |  |  |           unit    regtype |       |       |  |     |  |  |  |  |  cmd    msk     |        |  |  |  |  |  flush on commit
-      //     |  |  |  |           |       |       |       |       |  |     |  |  |  |  |  |      |       |        |  |  |  |  |  |  csr cmd
-      FLW      -> List(Y, Y, Y, uopLD     , FU_MEM, RT_FLT, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_W , U(0), N, N, N, N, N, N, CSRType.N),
-      FLD      -> List(Y, Y, N, uopLD     , FU_MEM, RT_FLT, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_D , U(0), N, N, N, N, N, N, CSRType.N),
-      FSW      -> List(Y, Y, Y, uopSTA    , FU_MEM, RT_X  , RT_FIX, RT_FLT, N, IS_S, N, Y, N, N, N, M_XWR, MSK_W , U(0), N, N, N, N, N, N, CSRType.N),
-      FSD      -> List(Y, Y, N, uopSTA    , FU_MEM, RT_X  , RT_FIX, RT_FLT, N, IS_S, N, Y, N, N, N, M_XWR, MSK_D , U(0), N, N, N, N, N, N, CSRType.N),
+      //                                                                   frs3_en                                wakeup_delay
+      //                                                                   |  imm sel                             |     bypassable (aka, known/fixed latency)
+      //                                                                   |  |     is_load                       |     |  br/jmp
+      //              is val inst?                         rs1 regtype     |  |     |  is_store                   |     |  |  is jal
+      //              |  is fp inst?                       |       rs2 type|  |     |  |  is_amo                  |     |  |  |  allocate_brtag
+      //              |  |  is dst single-prec?            |       |       |  |     |  |  |  is_fence             |     |  |  |  |
+      //              |  |  |  micro-opcode                |       |       |  |     |  |  |  |  is_fencei         |     |  |  |  |
+      //              |  |  |  |           func    dst     |       |       |  |     |  |  |  |  |  mem    mem     |     |  |  |  |  is unique? (clear pipeline for it)
+      //              |  |  |  |           unit    regtype |       |       |  |     |  |  |  |  |  cmd    msk     |     |  |  |  |  |  flush on commit
+      //              |  |  |  |           |       |       |       |       |  |     |  |  |  |  |  |      |       |     |  |  |  |  |  |  csr cmd
+      FLW     -> List(Y, Y, Y, uopLD     , FU_MEM, RT_FLT, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_W , U(0), N, N, N, N, N, N, CSRType.N),
+      FLD     -> List(Y, Y, N, uopLD     , FU_MEM, RT_FLT, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_D , U(0), N, N, N, N, N, N, CSRType.N),
+      FSW     -> List(Y, Y, Y, uopSTA    , FU_MEM, RT_X  , RT_FIX, RT_FLT, N, IS_S, N, Y, N, N, N, M_XWR, MSK_W , U(0), N, N, N, N, N, N, CSRType.N),
+      FSD     -> List(Y, Y, N, uopSTA    , FU_MEM, RT_X  , RT_FIX, RT_FLT, N, IS_S, N, Y, N, N, N, M_XWR, MSK_D , U(0), N, N, N, N, N, N, CSRType.N),
 
       FCLASS_S-> List(Y, Y, Y, uopFCLASS_S,FU_FPU, RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
       FCLASS_D-> List(Y, Y, N, uopFCLASS_D,FU_FPU, RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
@@ -343,7 +345,7 @@ import boom_v1.decode.DecodeLogic
   }
 
 
-  class DecodeUnitIo(implicit p: Parameters) extends BoomBundle()(p)
+  class DecodeUnitIo(implicit p: Parameters) extends Bundle
   {
     val enq = new Bundle { val uop = new MicroOp().asInput }
     val deq = new Bundle { val uop = new MicroOp().asOutput }
@@ -487,16 +489,16 @@ import boom_v1.decode.DecodeLogic
   }
 
 
-  class FetchSerializerResp(implicit p: Parameters) extends BoomBundle()(p)
+  class FetchSerializerResp(implicit p: Parameters) extends Bundle
   {
-    val uops = Vec(DECODE_WIDTH, new MicroOp())
+    val uops = Vec(new MicroOp(), p.DECODE_WIDTH)
     val pred_resp = new BranchPredictionResp()
   }
-  class FetchSerializerIO(implicit p: Parameters) extends BoomBundle()(p)
+  class FetchSerializerIO(implicit p: Parameters) extends Bundle
   {
-    val enq = new DecoupledIO(new FetchBundle()).flip
-    val deq = new DecoupledIO(new FetchSerializerResp)
-    val kill = Bool(INPUT)
+    val enq = slave Stream(new FetchBundle())
+    val deq = master Stream(new FetchSerializerResp)
+    val kill = in Bool()
   }
 
 
@@ -504,29 +506,29 @@ import boom_v1.decode.DecodeLogic
   // connect a N-word wide Fetch Buffer with a M-word decode
   // currently only works for 2 wide fetch to 1 wide decode, OR N:N fetch/decode
   // TODO instead of counter, clear mask bits as instructions are finished?
-  class FetchSerializerNtoM(implicit p: Parameters) extends BoomModule()(p)
+  class FetchSerializerNtoM(implicit p: Parameters) extends Bundle
   {
     val io = new FetchSerializerIO
 
-    val counter = Reg(init = UInt(0, log2Up(FETCH_WIDTH)))
-    val inst_idx = Wire(UInt())
-    inst_idx := UInt(0)
+    val counter = RegInit(U(0, log2Up(p.FETCH_WIDTH) bits))
+    val inst_idx = (UInt())
+    inst_idx := U(0)
 
     //-------------------------------------------------------------
     // Compute index for where to get the instruction
-    when (counter === UInt(1))
+    when (counter === U(1))
     {
-      inst_idx := UInt(1)
+      inst_idx := U(1)
     }
       .otherwise
       {
-        inst_idx := Mux(io.enq.bits.mask === UInt(2), UInt(1), UInt(0))
+        inst_idx := Mux(io.enq.payload.mask === U(2), U(1), U(0))
       }
 
     //-------------------------------------------------------------
     // Compute Enqueue Ready (get the next bundle)
     io.enq.ready := io.deq.ready &&
-      (io.enq.bits.mask =/= UInt(3) || (counter === UInt(1)))
+      ((io.enq.payload.mask =/= 3) || (counter === U(1)))
 
 
     //-------------------------------------------------------------
@@ -534,47 +536,47 @@ import boom_v1.decode.DecodeLogic
     when (io.kill || io.enq.ready)
     {
       // reset counter on every new bundle
-      counter := UInt(0)
+      counter := U(0)
     }
       .elsewhen (io.deq.valid && io.deq.ready)
       {
-        counter := counter + UInt(1)
+        counter := counter + U(1)
       }
 
 
     //-------------------------------------------------------------
     // override all the above logic for FW==1
-    if (FETCH_WIDTH == 1)
+    if (p.FETCH_WIDTH == 1)
     {
-      inst_idx := UInt(0)
+      inst_idx := U(0)
       io.enq.ready := io.deq.ready
     }
 
-    io.deq.bits.uops(0).pc             := io.enq.bits.pc
-    io.deq.bits.uops(0).fetch_pc_lob   := io.enq.bits.pc
-    io.deq.bits.uops(0).inst           := io.enq.bits.insts(inst_idx)
-    io.deq.bits.uops(0).br_prediction  := io.enq.bits.predictions(inst_idx)
-    io.deq.bits.uops(0).valid          := io.enq.bits.mask(inst_idx)
-    io.deq.bits.uops(0).xcpt_if        := io.enq.bits.xcpt_if
-    io.deq.bits.uops(0).replay_if        := io.enq.bits.replay_if
-    io.deq.bits.uops(0).debug_events   := io.enq.bits.debug_events(inst_idx)
+    io.deq.payload.uops(0).pc             := io.enq.payload.pc
+    io.deq.payload.uops(0).fetch_pc_lob   := io.enq.payload.pc
+    io.deq.payload.uops(0).inst           := io.enq.payload.insts(inst_idx)
+    io.deq.payload.uops(0).br_prediction  := io.enq.payload.predictions(inst_idx)
+    io.deq.payload.uops(0).valid          := io.enq.payload.mask(inst_idx)
+    io.deq.payload.uops(0).xcpt_if        := io.enq.payload.xcpt_if
+    io.deq.payload.uops(0).replay_if        := io.enq.payload.replay_if
+    io.deq.payload.uops(0).debug_events   := io.enq.payload.debug_events(inst_idx)
 
     //-------------------------------------------------------------
     // override all the above logic for DW>1
     // assume FW is also DW, and pass everything through
-    if ((DECODE_WIDTH == FETCH_WIDTH) && (FETCH_WIDTH > 1))
+    if ((p.DECODE_WIDTH == p.FETCH_WIDTH) && (p.FETCH_WIDTH > 1))
     {
       // 1:1, so pass everything straight through!
-      for (i <- 0 until DECODE_WIDTH)
+      for (i <- 0 until p.DECODE_WIDTH)
       {
-        io.deq.bits.uops(i).valid          := io.enq.bits.mask(i)
-        io.deq.bits.uops(i).pc             := (io.enq.bits.pc.toSInt & SInt(-(FETCH_WIDTH*coreInstBytes))).toUInt + UInt(i << 2)
-        io.deq.bits.uops(i).fetch_pc_lob   := io.enq.bits.pc
-        io.deq.bits.uops(i).inst           := io.enq.bits.insts(i)
-        io.deq.bits.uops(i).xcpt_if        := io.enq.bits.xcpt_if
-        io.deq.bits.uops(i).replay_if        := io.enq.bits.replay_if
-        io.deq.bits.uops(i).br_prediction  := io.enq.bits.predictions(i)
-        io.deq.bits.uops(i).debug_events   := io.enq.bits.debug_events(i)
+        io.deq.payload.uops(i).valid          := io.enq.payload.mask(i)
+        io.deq.payload.uops(i).pc             := (io.enq.payload.pc.asSInt & S(-(p.FETCH_WIDTH*p.coreInstBytes))).asUInt + U(i << 2)
+        io.deq.payload.uops(i).fetch_pc_lob   := io.enq.payload.pc
+        io.deq.payload.uops(i).inst           := io.enq.payload.insts(i)
+        io.deq.payload.uops(i).xcpt_if        := io.enq.payload.xcpt_if
+        io.deq.payload.uops(i).replay_if        := io.enq.payload.replay_if
+        io.deq.payload.uops(i).br_prediction  := io.enq.payload.predictions(i)
+        io.deq.payload.uops(i).debug_events   := io.enq.payload.debug_events(i)
       }
       io.enq.ready := io.deq.ready
     }
@@ -582,7 +584,7 @@ import boom_v1.decode.DecodeLogic
     // Pipe valid straight through, since conceptually,
     // we are just an extension of the Fetch Buffer
     io.deq.valid := io.enq.valid
-    io.deq.bits.pred_resp := io.enq.bits.pred_resp
+    io.deq.payload.pred_resp := io.enq.payload.pred_resp
 
   }
 
