@@ -152,7 +152,7 @@ class BTBUpdate(implicit p: Parameters) extends BtbBundle()(p) {
 // BHT update occurs during branch resolution on all conditional branches.
 //  - "pc" is what future fetch PCs will tag match against.
 class BHTUpdate(implicit p: Parameters) extends BtbBundle()(p) {
-  val prediction = new BHTResp
+  val prediction = new BTBResp
   val pc = UInt(p.vaddrBits bits)
   val branch = Bool()
   val taken = Bool()
@@ -311,12 +311,12 @@ class BTB(implicit p: Parameters) extends BtbModule {
     }
     when (io.bht_update.valid) {
       when (io.bht_update.payload.branch) {
-        bht.updateTable(io.bht_update.payload.pc, io.bht_update.payload.prediction, io.bht_update.payload.taken)
+        bht.updateTable(io.bht_update.payload.pc, io.bht_update.payload.prediction.bht, io.bht_update.payload.taken)
         when (io.bht_update.payload.mispredict) {
-          bht.updateHistory(io.bht_update.payload.pc, io.bht_update.payload.prediction, io.bht_update.payload.taken)
+          bht.updateHistory(io.bht_update.payload.pc, io.bht_update.payload.prediction.bht, io.bht_update.payload.taken)
         }
       }.elsewhen (io.bht_update.payload.mispredict) {
-        bht.resetHistory(io.bht_update.payload.prediction)
+        bht.resetHistory(io.bht_update.payload.prediction.bht)
       }
     }
     when (!res.taken && isBranch) { io.resp.payload.taken := False }
