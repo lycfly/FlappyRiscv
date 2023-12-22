@@ -1,4 +1,6 @@
 package boom_v1.Utils
+import boom_v1.MicroOp
+import boom_v1.exec.BrResolutionInfo
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
@@ -36,6 +38,40 @@ object PerformCircularShiftRegister
   }
 }
 
+//do two masks have at least 1 bit match?
+object maskMatch
+{
+  def apply(msk1: UInt, msk2: UInt): Bool = (msk1 & msk2) =/= U(0)
+}
+object IsKilledByBranch
+{
+  def apply(brinfo: BrResolutionInfo, uop: MicroOp): Bool =
+  {
+    return (brinfo.valid &&
+      brinfo.mispredict &&
+      maskMatch(brinfo.mask, uop.br_mask))
+  }
+
+  def apply(brinfo: BrResolutionInfo, uop_mask: UInt): Bool =
+  {
+    return (brinfo.valid &&
+      brinfo.mispredict &&
+      maskMatch(brinfo.mask, uop_mask))
+  }
+}
+object GetNewBrMask
+{
+  def apply(brinfo: BrResolutionInfo, uop: MicroOp): UInt =
+  {
+    return Mux(brinfo.valid, (uop.br_mask & ~brinfo.mask),
+      uop.br_mask)
+  }
+  def apply(brinfo: BrResolutionInfo, br_mask: UInt): UInt =
+  {
+    return Mux(brinfo.valid, (br_mask & ~brinfo.mask),
+      br_mask)
+  }
+}
 // Decrement the input "value", wrapping it if necessary.
 object WrapSub
 {

@@ -175,4 +175,16 @@ trait MemoryOpConstants {
   def isWriteIntent(cmd: UInt) = isWrite(cmd) || cmd === MEMOP.M_PFW.asBits.asUInt || cmd === MEMOP.M_XLR.asBits.asUInt
 }
 
+object ExcCauseConstants extends ExcCauseConstants
+trait ExcCauseConstants
+{
+  // a memory disambigious misspeculation occurred
+  val MINI_EXCEPTION_MEM_ORDERING = U(13)
+  // an instruction needs to be replayed (e.g., I$ asks for a replay)
+  val MINI_EXCEPTION_REPLAY = U(14)
+  require (!Causes.all.contains(13))
+  require (!Causes.all.contains(14))
+}
+
+
 

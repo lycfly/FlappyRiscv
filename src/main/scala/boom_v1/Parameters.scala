@@ -33,6 +33,7 @@ case class Parameters(
                        btb: Option[BTBParams] = Some(BTBParams()),
 
                        usingFPU: Boolean = false,
+                       usingFDivSqrt: Boolean = false,
                        enableAgePriorityIssue: Boolean = true,
                        enablePrefetching: Boolean = false,
                        enableFetchBufferFlowThrough: Boolean = false,

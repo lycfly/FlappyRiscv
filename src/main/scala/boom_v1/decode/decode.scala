@@ -5,20 +5,25 @@ package boom_v1.decode
 // All Rights Reserved. See LICENSE for license details.
 //------------------------------------------------------------------------------
 
+import boom_v1.ExcCauseConstants._
 import boom_v1.FUType._
 import boom_v1.IMMType._
 import boom_v1.Instructions._
 import boom_v1.MSKType._
 import boom_v1.MemoryOpConstants._
 import boom_v1.ScalarOpConstants._
-import boom_v1.{CSRType, FUType, IMMType, MEMType, MaskedDC, MicroOp, Parameters, UOPs}
+import boom_v1.{CSRType, Causes, FUType, IMMType, MEMType, MaskedDC, MicroOp, Parameters, UOPs}
 import boom_v1.UOPs._
 import boom_v1.MemoryOpConstants.MEMOP._
+import boom_v1.RISCVConstants._
+import boom_v1.Utils.GetNewBrMask
 import spinal.core._
 import spinal.lib._
 import boom_v1.decode.DecodeLogic
+import boom_v1.exec.BrResolutionInfo
 import boom_v1.fetch.FetchBundle
 import boom_v1.predictor.BranchPredictionResp
+import boom_v1.regfile.MStatus
 //import rocket.Instructions._
 //import rocket.{CSR,Causes}
 //import util.uintToMaskedLiteral
@@ -96,15 +101,15 @@ import boom_v1.predictor.BranchPredictionResp
   {
     // scalastyle:off
     //                                                         frs3_en                                wakeup_delay
-    //                is val inst?                                        |  imm sel                             |        bypassable (aka, known/fixed latency)
-    //                |  is fp inst?                                      |  |     is_load                       |        |  br/jmp
-    //                |  |  is single-prec?               rs1 regtype     |  |     |  is_store                   |        |  |  is jal
-    //                |  |  |  micro-code                 |       rs2 type|  |     |  |  is_amo                  |        |  |  |  allocate_brtag
-    //                |  |  |  |         func unit        |       |       |  |     |  |  |  is_fence             |        |  |  |  |
-    //                |  |  |  |         |                |       |       |  |     |  |  |  |  is_fencei         |        |  |  |  |
-    //                |  |  |  |         |        dst     |       |       |  |     |  |  |  |  |  mem    mem     |        |  |  |  |  is unique? (clear pipeline for it)
-    //                |  |  |  |         |        regtype |       |       |  |     |  |  |  |  |  cmd    msk     |        |  |  |  |  |  flush on commit
-    //                |  |  |  |         |        |       |       |       |  |     |  |  |  |  |  |      |       |        |  |  |  |  |  |  csr cmd
+    //                is val inst?                                        |  imm sel                             |     bypassable (aka, known/fixed latency)
+    //                |  is fp inst?                                      |  |     is_load                       |     |  br/jmp
+    //                |  |  is single-prec?               rs1 regtype     |  |     |  is_store                   |     |  |  is jal
+    //                |  |  |  micro-code                 |       rs2 type|  |     |  |  is_amo                  |     |  |  |  allocate_brtag
+    //                |  |  |  |         func unit        |       |       |  |     |  |  |  is_fence             |     |  |  |  |
+    //                |  |  |  |         |                |       |       |  |     |  |  |  |  is_fencei         |     |  |  |  |
+    //                |  |  |  |         |        dst     |       |       |  |     |  |  |  |  |  mem    mem     |     |  |  |  |  is unique? (clear pipeline for it)
+    //                |  |  |  |         |        regtype |       |       |  |     |  |  |  |  |  cmd    msk     |     |  |  |  |  |  flush on commit
+    //                |  |  |  |         |        |       |       |       |  |     |  |  |  |  |  |      |       |     |  |  |  |  |  |  csr cmd
     val table: Array[(MaskedLiteral, List[MaskedLiteral])] = Array(
       LD      -> List(Y, N, X, uopLD   , FU_MEM , RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_D , U(3), N, N, N, N, N, N, CSRType.N),
       LW      -> List(Y, N, X, uopLD   , FU_MEM , RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_W , U(3), N, N, N, N, N, N, CSRType.N),
@@ -326,16 +331,16 @@ import boom_v1.predictor.BranchPredictionResp
   {
     // scalastyle:off
     val table: Array[(MaskedLiteral, List[MaskedLiteral])] = Array(
-      //                                                          frs3_en                                wakeup_delay
-      //                                                          |  imm sel                             |        bypassable (aka, known/fixed latency)
-      //                                                          |  |     is_load                       |        |  br/jmp
-      //     is val inst?                         rs1 regtype     |  |     |  is_store                   |        |  |  is jal
-      //     |  is fp inst?                       |       rs2 type|  |     |  |  is_amo                  |        |  |  |  allocate_brtag
-      //     |  |  is dst single-prec?            |       |       |  |     |  |  |  is_fence             |        |  |  |  |
-      //     |  |  |  micro-opcode                |       |       |  |     |  |  |  |  is_fencei         |        |  |  |  |
-      //     |  |  |  |           func    dst     |       |       |  |     |  |  |  |  |  mem    mem     |        |  |  |  |  is unique? (clear pipeline for it)
-      //     |  |  |  |           unit    regtype |       |       |  |     |  |  |  |  |  cmd    msk     |        |  |  |  |  |  flush on commit
-      //     |  |  |  |           |       |       |       |       |  |     |  |  |  |  |  |      |       |        |  |  |  |  |  |  csr cmd
+      //                                                                    frs3_en                                wakeup_delay
+      //                                                                    |  imm sel                             |     bypassable (aka, known/fixed latency)
+      //                                                                    |  |     is_load                       |     |  br/jmp
+      //               is val inst?                         rs1 regtype     |  |     |  is_store                   |     |  |  is jal
+      //               |  is fp inst?                       |       rs2 type|  |     |  |  is_amo                  |     |  |  |  allocate_brtag
+      //               |  |  is dst single-prec?            |       |       |  |     |  |  |  is_fence             |     |  |  |  |
+      //               |  |  |  micro-opcode                |       |       |  |     |  |  |  |  is_fencei         |     |  |  |  |
+      //               |  |  |  |           func    dst     |       |       |  |     |  |  |  |  |  mem    mem     |     |  |  |  |  is unique? (clear pipeline for it)
+      //               |  |  |  |           unit    regtype |       |       |  |     |  |  |  |  |  cmd    msk     |     |  |  |  |  |  flush on commit
+      //               |  |  |  |           |       |       |       |       |  |     |  |  |  |  |  |      |       |     |  |  |  |  |  |  csr cmd
       FDIV_S    ->List(Y, Y, Y, uopFDIV_S , FU_FDV, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
       FDIV_D    ->List(Y, Y, N, uopFDIV_D , FU_FDV, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
       FSQRT_S   ->List(Y, Y, Y, uopFSQRT_S, FU_FDV, RT_FLT, RT_FLT, RT_X  , N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
@@ -349,28 +354,26 @@ import boom_v1.predictor.BranchPredictionResp
   {
     val enq = new Bundle { val uop = new MicroOp().asInput }
     val deq = new Bundle { val uop = new MicroOp().asOutput }
-
     // from CSRFile
-    val status = new rocket.MStatus().asInput
-    val interrupt = Bool(INPUT)
-    val interrupt_cause = UInt(INPUT, xLen)
+    val status = new MStatus().asInput
+    val interrupt = in Bool()
+    val interrupt_cause = in UInt(p.xLen bits)
 
-    override def cloneType: this.type = new DecodeUnitIo()(p).asInstanceOf[this.type]
   }
 
   // Takes in a single instruction, generates a MicroOp (or multiply micro-ops over x cycles)
-  class DecodeUnit(implicit p: Parameters) extends BoomModule()(p)
+  class DecodeUnit(implicit p: Parameters) extends Bundle
   {
     val io = new DecodeUnitIo
 
-    val uop = Wire(new MicroOp())
+    val uop = (new MicroOp())
     uop := io.enq.uop
 
     var decode_table = XDecode.table
-    if (usingFPU) decode_table ++= FDecode.table
-    if (usingFPU && usingFDivSqrt) decode_table ++= FDivSqrtDecode.table
+    if (p.usingFPU) decode_table ++= FDecode.table
+    if (p.usingFPU && p.usingFDivSqrt) decode_table ++= FDivSqrtDecode.table
 
-    val cs = Wire(new CtrlSigs()).decode(uop.inst, decode_table)
+    val cs = (new CtrlSigs()).decode(uop.inst, decode_table)
 
     // Exception Handling
     val id_illegal_insn = !cs.legal ||
@@ -383,8 +386,8 @@ import boom_v1.predictor.BranchPredictionResp
     val (xcpt_valid, xcpt_cause) = checkExceptions(List(
       (io.interrupt,     io.interrupt_cause),
       (uop.replay_if,    MINI_EXCEPTION_REPLAY),
-      (uop.xcpt_if,      UInt(Causes.fault_fetch)),
-      (id_illegal_insn,  UInt(Causes.illegal_instruction))))
+      (uop.xcpt_if,      UInt(Causes.fault_fetch bits)),
+      (id_illegal_insn,  UInt(Causes.illegal_instruction bits))))
 
     uop.exception := xcpt_valid
     uop.exc_cause := xcpt_cause
@@ -397,13 +400,13 @@ import boom_v1.predictor.BranchPredictionResp
     // x-registers placed in 0-31, f-registers placed in 32-63.
     // This allows us to straight-up compare register specifiers and not need to
     // verify the rtypes (e.g., bypassing in rename).
-    uop.ldst       := Cat(cs.dst_type === RT_FLT, uop.inst(RD_MSB,RD_LSB))
-    uop.lrs1       := Cat(cs.rs1_type === RT_FLT, uop.inst(RS1_MSB,RS1_LSB))
-    uop.lrs2       := Cat(cs.rs2_type === RT_FLT, uop.inst(RS2_MSB,RS2_LSB))
-    uop.lrs3       := Cat(Bool(true),             uop.inst(RS3_MSB,RS3_LSB))
+    uop.ldst       := Cat(cs.dst_type === RT_FLT, uop.inst(RD_MSB downto RD_LSB))
+    uop.lrs1       := Cat(cs.rs1_type === RT_FLT, uop.inst(RS1_MSB downto RS1_LSB))
+    uop.lrs2       := Cat(cs.rs2_type === RT_FLT, uop.inst(RS2_MSB downto RS2_LSB))
+    uop.lrs3       := Cat(Bool(true),      uop.inst(RS3_MSB downto RS3_LSB))
     // TODO do I need to remove (uop.lrs3) for integer-only? Or do synthesis tools properly remove it?
 
-    uop.ldst_val   := (cs.dst_type =/= RT_X && uop.ldst =/= UInt(0))
+    uop.ldst_val   := (cs.dst_type =/= RT_X && uop.ldst =/= U(0))
     uop.dst_rtype  := cs.dst_type
     uop.lrs1_rtype := cs.rs1_type
     uop.lrs2_rtype := cs.rs2_type
@@ -429,8 +432,8 @@ import boom_v1.predictor.BranchPredictionResp
     // immediates
 
     // repackage the immediate, and then pass the fewest number of bits around
-    val di24_20 = Mux(cs.imm_sel === IS_B || cs.imm_sel === IS_S, uop.inst(11,7), uop.inst(24,20))
-    uop.imm_packed := Cat(uop.inst(31,25), di24_20, uop.inst(19,12))
+    val di24_20 = Mux(cs.imm_sel === IS_B.asBits.asUInt || cs.imm_sel === IS_S.asBits.asUInt, uop.inst(11 downto 7), uop.inst(24 downto 20))
+    uop.imm_packed := Cat(uop.inst(31 downto 25), di24_20, uop.inst(19 downto 12)).asUInt
 
     //-------------------------------------------------------------
 
@@ -465,11 +468,11 @@ import boom_v1.predictor.BranchPredictionResp
     val bpd_csignals =
       DecodeLogic(io.inst,
         List[MaskedLiteral](N, N, N, IS_X),
-        ////                      //   is br?
-        ////                      //   |  is jal?
-        ////                      //   |  |  is jalr?
-        ////                      //   |  |  |  br type
-        ////                      //   |  |  |  |
+        ////         //   is br?
+        ////         //   |  is jal?
+        ////         //   |  |  is jalr?
+        ////         //   |  |  |  br type
+        ////         //   |  |  |  |
         Array[(MaskedLiteral, List[MaskedLiteral])](
           JAL     -> List(N, Y, N, IMMType.IS_J),
           JALR    -> List(N, N, Y, IMMType.IS_I),
@@ -593,60 +596,60 @@ import boom_v1.predictor.BranchPredictionResp
   // (each micro-op in the machine has a branch mask which says which branches it
   // is being speculated under).
 
-  class DebugBranchMaskGenerationLogicIO(implicit p: Parameters) extends BoomBundle()(p)
+  class DebugBranchMaskGenerationLogicIO(implicit p: Parameters) extends Bundle
   {
-    val branch_mask = UInt(width = MAX_BR_COUNT)
+    val branch_mask = UInt(width = p.MAX_BR_COUNT bits)
   }
 
-  class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) extends BoomModule()(p)
+  class BranchMaskGenerationLogic(val pl_width: Int)(implicit p: Parameters) extends Module
   {
     val io = new Bundle
     {
       // guess if the uop is a branch (we'll catch this later)
-      val is_branch = Vec(pl_width, Bool()).asInput
+      val is_branch = in Vec(Bool(), pl_width)
       // lock in that it's actually a branch and will fire, so we update
       // the branch_masks.
-      val will_fire = Vec(pl_width, Bool()).asInput
+      val will_fire = in Vec(Bool(), pl_width)
 
       // give out tag immediately (needed in rename)
       // mask can come later in the cycle
-      val br_tag    = Vec(pl_width, UInt(width=BR_TAG_SZ)).asOutput
-      val br_mask   = Vec(pl_width, UInt(width=MAX_BR_COUNT)).asOutput
+      val br_tag    = out Vec(UInt(width=p.BR_TAG_SZ bits), pl_width)
+      val br_mask   = out Vec(UInt(width=p.MAX_BR_COUNT bits), pl_width)
 
       // tell decoders the branch mask has filled up, but on the granularity
       // of an individual micro-op (so some micro-ops can go through)
-      val is_full   = Vec(pl_width, Bool()).asOutput
+      val is_full   = out Vec(Bool(), pl_width)
 
-      val brinfo         = new BrResolutionInfo().asInput
-      val flush_pipeline = Bool(INPUT)
+      val brinfo         = in(new BrResolutionInfo())
+      val flush_pipeline = in Bool()
 
       val debug = new DebugBranchMaskGenerationLogicIO().asOutput
     }
 
-    val branch_mask = Reg(init = UInt(0, MAX_BR_COUNT))
+    val branch_mask = RegInit(U(0, p.MAX_BR_COUNT bits))
 
     //-------------------------------------------------------------
     // Give out the branch tag to each branch micro-op
 
     var allocate_mask = branch_mask
-    val tag_masks = Wire(Vec(pl_width, UInt(width=MAX_BR_COUNT)))
+    val tag_masks = (Vec(UInt(width=p.MAX_BR_COUNT bits),pl_width))
 
     for (w <- 0 until pl_width)
     {
       // TODO this is a loss of performance as we're blocking branches based on potentially fake branches
-      io.is_full(w) := (allocate_mask === ~(UInt(0,MAX_BR_COUNT))) && io.is_branch(w)
+      io.is_full(w) := (allocate_mask === ~(U(0,p.MAX_BR_COUNT bits))) && io.is_branch(w)
 
       // find br_tag and compute next br_mask
-      val new_br_tag = Wire(UInt(width = BR_TAG_SZ))
-      new_br_tag := UInt(0)
-      tag_masks(w) := UInt(0)
+      val new_br_tag = (UInt(width = p.BR_TAG_SZ bits))
+      new_br_tag := U(0)
+      tag_masks(w) := U(0)
 
-      for (i <- MAX_BR_COUNT-1 to 0 by -1)
+      for (i <- p.MAX_BR_COUNT-1 to 0 by -1)
       {
         when (~allocate_mask(i))
         {
-          new_br_tag := UInt(i)
-          tag_masks(w) := (UInt(1) << UInt(i))
+          new_br_tag := U(i)
+          tag_masks(w) := (U(1) << U(i))
         }
       }
 
@@ -670,7 +673,7 @@ import boom_v1.predictor.BranchPredictionResp
 
     when (io.flush_pipeline)
     {
-      branch_mask := UInt(0)
+      branch_mask := U(0)
     }
       .elsewhen (io.brinfo.valid && io.brinfo.mispredict)
       {
