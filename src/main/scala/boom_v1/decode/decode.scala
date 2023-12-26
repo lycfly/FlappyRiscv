@@ -96,6 +96,8 @@ import boom_v1.regfile.MStatus
     }
   }
 
+object Enum2Masked {
+}
 
   object XDecode extends DecodeConstants
   {
@@ -111,124 +113,124 @@ import boom_v1.regfile.MStatus
     //                |  |  |  |         |        regtype |       |       |  |     |  |  |  |  |  cmd    msk     |     |  |  |  |  |  flush on commit
     //                |  |  |  |         |        |       |       |       |  |     |  |  |  |  |  |      |       |     |  |  |  |  |  |  csr cmd
     val table: Array[(MaskedLiteral, List[MaskedLiteral])] = Array(
-      LD      -> List(Y, N, X, uopLD   , FU_MEM , RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_D , U(3), N, N, N, N, N, N, CSRType.N),
-      LW      -> List(Y, N, X, uopLD   , FU_MEM , RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_W , U(3), N, N, N, N, N, N, CSRType.N),
-      LWU     -> List(Y, N, X, uopLD   , FU_MEM , RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_WU, U(3), N, N, N, N, N, N, CSRType.N),
-      LH      -> List(Y, N, X, uopLD   , FU_MEM , RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_H , U(3), N, N, N, N, N, N, CSRType.N),
-      LHU     -> List(Y, N, X, uopLD   , FU_MEM , RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_HU, U(3), N, N, N, N, N, N, CSRType.N),
-      LB      -> List(Y, N, X, uopLD   , FU_MEM , RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_B , U(3), N, N, N, N, N, N, CSRType.N),
-      LBU     -> List(Y, N, X, uopLD   , FU_MEM , RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_BU, U(3), N, N, N, N, N, N, CSRType.N),
+      LD      -> List(Y, N, X, uopLD.toM()   , FU_MEM .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD.toM()  , MSK_D .toM(), U(3), N, N, N, N, N, N, CSRType.N.toM()),
+      LW      -> List(Y, N, X, uopLD.toM()   , FU_MEM .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD.toM()  , MSK_W .toM(), U(3), N, N, N, N, N, N, CSRType.N.toM()),
+      LWU     -> List(Y, N, X, uopLD.toM()   , FU_MEM .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD.toM()  , MSK_WU.toM(), U(3), N, N, N, N, N, N, CSRType.N.toM()),
+      LH      -> List(Y, N, X, uopLD.toM()   , FU_MEM .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD.toM()  , MSK_H .toM(), U(3), N, N, N, N, N, N, CSRType.N.toM()),
+      LHU     -> List(Y, N, X, uopLD.toM()   , FU_MEM .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD.toM()  , MSK_HU.toM(), U(3), N, N, N, N, N, N, CSRType.N.toM()),
+      LB      -> List(Y, N, X, uopLD.toM()   , FU_MEM .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD.toM()  , MSK_B .toM(), U(3), N, N, N, N, N, N, CSRType.N.toM()),
+      LBU     -> List(Y, N, X, uopLD.toM()   , FU_MEM .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD.toM()  , MSK_BU.toM(), U(3), N, N, N, N, N, N, CSRType.N.toM()),
 
-      SD      -> List(Y, N, X, uopSTA  , FU_MEM , RT_X  , RT_FIX, RT_FIX, N, IS_S, N, Y, N, N, N, M_XWR, MSK_D , U(0), N, N, N, N, N, N, CSRType.N),
-      SW      -> List(Y, N, X, uopSTA  , FU_MEM , RT_X  , RT_FIX, RT_FIX, N, IS_S, N, Y, N, N, N, M_XWR, MSK_W , U(0), N, N, N, N, N, N, CSRType.N),
-      SH      -> List(Y, N, X, uopSTA  , FU_MEM , RT_X  , RT_FIX, RT_FIX, N, IS_S, N, Y, N, N, N, M_XWR, MSK_H , U(0), N, N, N, N, N, N, CSRType.N),
-      SB      -> List(Y, N, X, uopSTA  , FU_MEM , RT_X  , RT_FIX, RT_FIX, N, IS_S, N, Y, N, N, N, M_XWR, MSK_B , U(0), N, N, N, N, N, N, CSRType.N),
+      SD      -> List(Y, N, X, uopSTA.toM()  , FU_MEM .toM(), RT_X  , RT_FIX, RT_FIX, N, IS_S, N, Y, N, N, N, M_XWR.toM()  , MSK_D .toM(), U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      SW      -> List(Y, N, X, uopSTA.toM()  , FU_MEM .toM(), RT_X  , RT_FIX, RT_FIX, N, IS_S, N, Y, N, N, N, M_XWR.toM()  , MSK_W .toM(), U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      SH      -> List(Y, N, X, uopSTA.toM()  , FU_MEM .toM(), RT_X  , RT_FIX, RT_FIX, N, IS_S, N, Y, N, N, N, M_XWR.toM()  , MSK_H .toM(), U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      SB      -> List(Y, N, X, uopSTA.toM()  , FU_MEM .toM(), RT_X  , RT_FIX, RT_FIX, N, IS_S, N, Y, N, N, N, M_XWR.toM()  , MSK_B .toM(), U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      LUI     -> List(Y, N, X, uopLUI  , FU_ALU , RT_FIX, RT_X  , RT_X  , N, IS_U, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
+      LUI     -> List(Y, N, X, uopLUI.toM()  , FU_ALU .toM(), RT_FIX, RT_X  , RT_X  , N, IS_U, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
 
-      ADDI    -> List(Y, N, X, uopADDI , FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      ANDI    -> List(Y, N, X, uopANDI , FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      ORI     -> List(Y, N, X, uopORI  , FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      XORI    -> List(Y, N, X, uopXORI , FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SLTI    -> List(Y, N, X, uopSLTI , FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SLTIU   -> List(Y, N, X, uopSLTIU, FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SLLI    -> List(Y, N, X, uopSLLI , FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SRAI    -> List(Y, N, X, uopSRAI , FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SRLI    -> List(Y, N, X, uopSRLI , FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
+      ADDI    -> List(Y, N, X, uopADDI.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      ANDI    -> List(Y, N, X, uopANDI.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      ORI     -> List(Y, N, X, uopORI.toM()  , FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      XORI    -> List(Y, N, X, uopXORI.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SLTI    -> List(Y, N, X, uopSLTI.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SLTIU   -> List(Y, N, X, uopSLTIU.toM(), FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SLLI    -> List(Y, N, X, uopSLLI.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SRAI    -> List(Y, N, X, uopSRAI.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SRLI    -> List(Y, N, X, uopSRLI.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
 
-      ADDIW   -> List(Y, N, X, uopADDIW, FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SLLIW   -> List(Y, N, X, uopSLLIW, FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SRAIW   -> List(Y, N, X, uopSRAIW, FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SRLIW   -> List(Y, N, X, uopSRLIW, FU_ALU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
+      ADDIW   -> List(Y, N, X, uopADDIW.toM(), FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SLLIW   -> List(Y, N, X, uopSLLIW.toM(), FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SRAIW   -> List(Y, N, X, uopSRAIW.toM(), FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SRLIW   -> List(Y, N, X, uopSRLIW.toM(), FU_ALU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
 
-      SLL     -> List(Y, N, X, uopSLL  , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      ADD     -> List(Y, N, X, uopADD  , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SUB     -> List(Y, N, X, uopSUB  , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SLT     -> List(Y, N, X, uopSLT  , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SLTU    -> List(Y, N, X, uopSLTU , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      AND     -> List(Y, N, X, uopAND  , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      OR      -> List(Y, N, X, uopOR   , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      XOR     -> List(Y, N, X, uopXOR  , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SRA     -> List(Y, N, X, uopSRA  , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SRL     -> List(Y, N, X, uopSRL  , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
+      SLL     -> List(Y, N, X, uopSLL.toM()  , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      ADD     -> List(Y, N, X, uopADD.toM()  , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SUB     -> List(Y, N, X, uopSUB.toM()  , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SLT     -> List(Y, N, X, uopSLT.toM()  , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SLTU    -> List(Y, N, X, uopSLTU.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      AND     -> List(Y, N, X, uopAND.toM()  , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      OR      -> List(Y, N, X, uopOR.toM()   , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      XOR     -> List(Y, N, X, uopXOR.toM()  , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SRA     -> List(Y, N, X, uopSRA.toM()  , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SRL     -> List(Y, N, X, uopSRL.toM()  , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
 
-      ADDW    -> List(Y, N, X, uopADDW , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SUBW    -> List(Y, N, X, uopSUBW , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SLLW    -> List(Y, N, X, uopSLLW , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SRAW    -> List(Y, N, X, uopSRAW , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
-      SRLW    -> List(Y, N, X, uopSRLW , FU_ALU , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(1), Y, N, N, N, N, N, CSRType.N),
+      ADDW    -> List(Y, N, X, uopADDW.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SUBW    -> List(Y, N, X, uopSUBW.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SLLW    -> List(Y, N, X, uopSLLW.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SRAW    -> List(Y, N, X, uopSRAW.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
+      SRLW    -> List(Y, N, X, uopSRLW.toM() , FU_ALU .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(1), Y, N, N, N, N, N, CSRType.N.toM()),
 
-      MUL     -> List(Y, N, X, uopMUL  , FU_MUL , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      MULH    -> List(Y, N, X, uopMULH , FU_MUL , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      MULHU   -> List(Y, N, X, uopMULHU, FU_MUL , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      MULHSU  -> List(Y, N, X, uopMULHSU,FU_MUL , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      MULW    -> List(Y, N, X, uopMULW , FU_MUL , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      MUL     -> List(Y, N, X, uopMUL  .toM(), FU_MUL .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      MULH    -> List(Y, N, X, uopMULH .toM(), FU_MUL .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      MULHU   -> List(Y, N, X, uopMULHU.toM(), FU_MUL .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      MULHSU  -> List(Y, N, X,uopMULHSU.toM(), FU_MUL .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      MULW    -> List(Y, N, X, uopMULW .toM(), FU_MUL .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      DIV     -> List(Y, N, X, uopDIV  , FU_DIV , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      DIVU    -> List(Y, N, X, uopDIVU , FU_DIV , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      REM     -> List(Y, N, X, uopREM  , FU_DIV , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      REMU    -> List(Y, N, X, uopREMU , FU_DIV , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      DIVW    -> List(Y, N, X, uopDIVW , FU_DIV , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      DIVUW   -> List(Y, N, X, uopDIVUW, FU_DIV , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      REMW    -> List(Y, N, X, uopREMW , FU_DIV , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      REMUW   -> List(Y, N, X, uopREMUW, FU_DIV , RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      DIV     -> List(Y, N, X, uopDIV  .toM(), FU_DIV .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      DIVU    -> List(Y, N, X, uopDIVU .toM(), FU_DIV .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      REM     -> List(Y, N, X, uopREM  .toM(), FU_DIV .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      REMU    -> List(Y, N, X, uopREMU .toM(), FU_DIV .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      DIVW    -> List(Y, N, X, uopDIVW .toM(), FU_DIV .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      DIVUW   -> List(Y, N, X, uopDIVUW.toM(), FU_DIV .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      REMW    -> List(Y, N, X, uopREMW .toM(), FU_DIV .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      REMUW   -> List(Y, N, X, uopREMUW.toM(), FU_DIV .toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      AUIPC   -> List(Y, N, X, uopAUIPC, FU_BRU , RT_FIX, RT_X  , RT_X  , N, IS_U, N, N, N, N, N, M_X  , MSK_X , U(1), N, N, N, N, N, N, CSRType.N), // use BRU for the PC read
-      JAL     -> List(Y, N, X, uopJAL  , FU_BRU , RT_FIX, RT_X  , RT_X  , N, IS_J, N, N, N, N, N, M_X  , MSK_X , U(1), N, Y, Y, N, N, N, CSRType.N),
-      JALR    -> List(Y, N, X, uopJALR , FU_BRU , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(1), N, Y, N, Y, N, N, CSRType.N),
-      BEQ     -> List(Y, N, X, uopBEQ  , FU_BRU , RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X  , MSK_X , U(0), N, Y, N, Y, N, N, CSRType.N),
-      BNE     -> List(Y, N, X, uopBNE  , FU_BRU , RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X  , MSK_X , U(0), N, Y, N, Y, N, N, CSRType.N),
-      BGE     -> List(Y, N, X, uopBGE  , FU_BRU , RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X  , MSK_X , U(0), N, Y, N, Y, N, N, CSRType.N),
-      BGEU    -> List(Y, N, X, uopBGEU , FU_BRU , RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X  , MSK_X , U(0), N, Y, N, Y, N, N, CSRType.N),
-      BLT     -> List(Y, N, X, uopBLT  , FU_BRU , RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X  , MSK_X , U(0), N, Y, N, Y, N, N, CSRType.N),
-      BLTU    -> List(Y, N, X, uopBLTU , FU_BRU , RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X  , MSK_X , U(0), N, Y, N, Y, N, N, CSRType.N),
+      AUIPC   -> List(Y, N, X, uopAUIPC.toM(), FU_BRU .toM(), RT_FIX, RT_X  , RT_X  , N, IS_U, N, N, N, N, N, M_X          , MSK_X       , U(1), N, N, N, N, N, N, CSRType.N.toM()), // use BRU for the PC read
+      JAL     -> List(Y, N, X, uopJAL  .toM(), FU_BRU .toM(), RT_FIX, RT_X  , RT_X  , N, IS_J, N, N, N, N, N, M_X          , MSK_X       , U(1), N, Y, Y, N, N, N, CSRType.N.toM()),
+      JALR    -> List(Y, N, X, uopJALR .toM(), FU_BRU .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(1), N, Y, N, Y, N, N, CSRType.N.toM()),
+      BEQ     -> List(Y, N, X, uopBEQ  .toM(), FU_BRU .toM(), RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X          , MSK_X       , U(0), N, Y, N, Y, N, N, CSRType.N.toM()),
+      BNE     -> List(Y, N, X, uopBNE  .toM(), FU_BRU .toM(), RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X          , MSK_X       , U(0), N, Y, N, Y, N, N, CSRType.N.toM()),
+      BGE     -> List(Y, N, X, uopBGE  .toM(), FU_BRU .toM(), RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X          , MSK_X       , U(0), N, Y, N, Y, N, N, CSRType.N.toM()),
+      BGEU    -> List(Y, N, X, uopBGEU .toM(), FU_BRU .toM(), RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X          , MSK_X       , U(0), N, Y, N, Y, N, N, CSRType.N.toM()),
+      BLT     -> List(Y, N, X, uopBLT  .toM(), FU_BRU .toM(), RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X          , MSK_X       , U(0), N, Y, N, Y, N, N, CSRType.N.toM()),
+      BLTU    -> List(Y, N, X, uopBLTU .toM(), FU_BRU .toM(), RT_X  , RT_FIX, RT_FIX, N, IS_B, N, N, N, N, N, M_X          , MSK_X       , U(0), N, Y, N, Y, N, N, CSRType.N.toM()),
 
       // I-type, the immediate12 holds the CSR register.
-      CSRRW   -> List(Y, N, X, uopCSRRW, FU_CSR , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, Y, CSRType.W),
-      CSRRS   -> List(Y, N, X, uopCSRRS, FU_CSR , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, Y, CSRType.S),
-      CSRRC   -> List(Y, N, X, uopCSRRC, FU_CSR , RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, Y, CSRType.C),
+      CSRRW   -> List(Y, N, X, uopCSRRW.toM(), FU_CSR .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, Y, CSRType.W.toM()),
+      CSRRS   -> List(Y, N, X, uopCSRRS.toM(), FU_CSR .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, Y, CSRType.S.toM()),
+      CSRRC   -> List(Y, N, X, uopCSRRC.toM(), FU_CSR .toM(), RT_FIX, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, Y, CSRType.C.toM()),
 
-      CSRRWI  -> List(Y, N, X, uopCSRRWI,FU_CSR , RT_FIX, RT_PAS, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, Y, CSRType.W),
-      CSRRSI  -> List(Y, N, X, uopCSRRSI,FU_CSR , RT_FIX, RT_PAS, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, Y, CSRType.S),
-      CSRRCI  -> List(Y, N, X, uopCSRRCI,FU_CSR , RT_FIX, RT_PAS, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, Y, CSRType.C),
+      CSRRWI  -> List(Y, N, X, uopCSRRWI.toM(),FU_CSR .toM(), RT_FIX, RT_PAS, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, Y, CSRType.W.toM()),
+      CSRRSI  -> List(Y, N, X, uopCSRRSI.toM(),FU_CSR .toM(), RT_FIX, RT_PAS, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, Y, CSRType.S.toM()),
+      CSRRCI  -> List(Y, N, X, uopCSRRCI.toM(),FU_CSR .toM(), RT_FIX, RT_PAS, RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, Y, CSRType.C.toM()),
 
-      SFENCE_VM->List(Y, N, X, uopSYSTEM,FU_CSR , RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, N, CSRType.I),
-      SCALL   -> List(Y, N, X, uopSYSTEM,FU_CSR , RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, N, CSRType.I),
-      SBREAK  -> List(Y, N, X, uopSYSTEM,FU_CSR , RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, N, CSRType.I),
-      SRET    -> List(Y, N, X, uopSYSTEM,FU_CSR , RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, N, CSRType.I),
-      MRET    -> List(Y, N, X, uopSYSTEM,FU_CSR , RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, N, CSRType.I),
-      DRET    -> List(Y, N, X, uopSYSTEM,FU_CSR , RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, N, CSRType.I),
+      SFENCE_VM->List(Y, N, X, uopSYSTEM.toM(),FU_CSR .toM(), RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, N, CSRType.I.toM()),
+      SCALL   -> List(Y, N, X, uopSYSTEM.toM(),FU_CSR .toM(), RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, N, CSRType.I.toM()),
+      SBREAK  -> List(Y, N, X, uopSYSTEM.toM(),FU_CSR .toM(), RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, N, CSRType.I.toM()),
+      SRET    -> List(Y, N, X, uopSYSTEM.toM(),FU_CSR .toM(), RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, N, CSRType.I.toM()),
+      MRET    -> List(Y, N, X, uopSYSTEM.toM(),FU_CSR .toM(), RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, N, CSRType.I.toM()),
+      DRET    -> List(Y, N, X, uopSYSTEM.toM(),FU_CSR .toM(), RT_X  , RT_X  , RT_X  , N, IS_I, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, N, CSRType.I.toM()),
 
-      WFI     -> List(Y, N, X, uopNOP   ,FU_X   , RT_X  , RT_X  , RT_X  , N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, Y, Y, CSRType.N), // implemented as a NOP; TODO
+      WFI     -> List(Y, N, X, uopNOP   .toM(),FU_X         , RT_X  , RT_X  , RT_X  , N, IS_X, N, N, N, N, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, Y, CSRType.N.toM()), // implemented as a NOP; TODO
 
-      FENCE_I -> List(Y, N, X, uopNOP  , FU_X   , RT_X  , RT_X  , RT_X  , N, IS_X, N, N, N, N, Y, M_X  , MSK_X , U(0), N, N, N, N, Y, Y, CSRType.N),
-      FENCE   -> List(Y, N, X, uopFENCE, FU_MEM , RT_X  , RT_X  , RT_X  , N, IS_X, N, Y, N, Y, N, M_X  , MSK_X , U(0), N, N, N, N, Y, Y, CSRType.N), // TODO PERF make fence higher performance
+      FENCE_I -> List(Y, N, X, uopNOP  .toM(), FU_X         , RT_X  , RT_X  , RT_X  , N, IS_X, N, N, N, N, Y, M_X          , MSK_X       , U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      FENCE   -> List(Y, N, X, uopFENCE.toM(), FU_MEM .toM(), RT_X  , RT_X  , RT_X  , N, IS_X, N, Y, N, Y, N, M_X          , MSK_X       , U(0), N, N, N, N, Y, Y, CSRType.N.toM()), // TODO PERF make fence higher performance
       // currently serializes pipeline
       // A-type
-      AMOADD_W-> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_ADD, MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N), // TODO make AMOs higherperformance
-      AMOXOR_W-> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_XOR, MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOSWAP_W->List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_SWAP,MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOAND_W-> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_AND, MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOOR_W -> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_OR,  MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOMIN_W-> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MIN, MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOMINU_W->List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MINU,MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOMAX_W-> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MAX, MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOMAXU_W->List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MAXU,MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N),
+      AMOADD_W-> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_ADD.toM(), MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()), // TODO make AMOs higherperformance
+      AMOXOR_W-> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_XOR.toM(), MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOSWAP_W->List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_SWAP.toM(),MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOAND_W-> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_AND.toM(), MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOOR_W -> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_OR.toM(),  MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOMIN_W-> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MIN.toM(), MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOMINU_W->List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MINU.toM(),MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOMAX_W-> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MAX.toM(), MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOMAXU_W->List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MAXU.toM(),MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
 
-      AMOADD_D-> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_ADD, MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOXOR_D-> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_XOR, MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOSWAP_D->List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_SWAP,MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOAND_D-> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_AND, MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOOR_D -> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_OR,  MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOMIN_D-> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MIN, MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOMINU_D->List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MINU,MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOMAX_D-> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MAX, MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N),
-      AMOMAXU_D->List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MAXU,MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N),
+      AMOADD_D-> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_ADD.toM(), MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOXOR_D-> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_XOR.toM(), MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOSWAP_D->List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_SWAP.toM(),MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOAND_D-> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_AND.toM(), MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOOR_D -> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_OR.toM(),  MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOMIN_D-> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MIN.toM(), MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOMINU_D->List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MINU.toM(),MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOMAX_D-> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MAX.toM(), MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
+      AMOMAXU_D->List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XA_MAXU.toM(),MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()),
 
-      LR_W    -> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XLR   , MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N), // TODO optimize LR, SC
-      LR_D    -> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XLR   , MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N), // note LR generates 2 micro-ops,
-      SC_W    -> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XSC   , MSK_W,U(0),N, N, N, N, Y, Y, CSRType.N), // one which isn't needed
-      SC_D    -> List(Y, N, X, uopAMO_AG, FU_MEM, RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XSC   , MSK_D,U(0),N, N, N, N, Y, Y, CSRType.N)
+      LR_W    -> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XLR.toM()   , MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()), // TODO optimize LR, SC
+      LR_D    -> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XLR.toM()   , MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()), // note LR generates 2 micro-ops,
+      SC_W    -> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XSC.toM()   , MSK_W.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM()), // one which isn't needed
+      SC_D    -> List(Y, N, X, uopAMO_AG.toM(), FU_MEM.toM(), RT_FIX, RT_FIX, RT_FIX, N, IS_X, N, Y, Y, N, N, M_XSC.toM()   , MSK_D.toM(), U(0), N, N, N, N, Y, Y, CSRType.N.toM())
     )
     // scalastyle:on
   }
@@ -247,81 +249,81 @@ import boom_v1.regfile.MStatus
       //              |  |  |  |           func    dst     |       |       |  |     |  |  |  |  |  mem    mem     |     |  |  |  |  is unique? (clear pipeline for it)
       //              |  |  |  |           unit    regtype |       |       |  |     |  |  |  |  |  cmd    msk     |     |  |  |  |  |  flush on commit
       //              |  |  |  |           |       |       |       |       |  |     |  |  |  |  |  |      |       |     |  |  |  |  |  |  csr cmd
-      FLW     -> List(Y, Y, Y, uopLD     , FU_MEM, RT_FLT, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_W , U(0), N, N, N, N, N, N, CSRType.N),
-      FLD     -> List(Y, Y, N, uopLD     , FU_MEM, RT_FLT, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD, MSK_D , U(0), N, N, N, N, N, N, CSRType.N),
-      FSW     -> List(Y, Y, Y, uopSTA    , FU_MEM, RT_X  , RT_FIX, RT_FLT, N, IS_S, N, Y, N, N, N, M_XWR, MSK_W , U(0), N, N, N, N, N, N, CSRType.N),
-      FSD     -> List(Y, Y, N, uopSTA    , FU_MEM, RT_X  , RT_FIX, RT_FLT, N, IS_S, N, Y, N, N, N, M_XWR, MSK_D , U(0), N, N, N, N, N, N, CSRType.N),
+      FLW     -> List(Y, Y, Y, uopLD.toM()     , FU_MEM.toM(), RT_FLT, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD.toM(), MSK_W .toM(), U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FLD     -> List(Y, Y, N, uopLD.toM()     , FU_MEM.toM(), RT_FLT, RT_FIX, RT_X  , N, IS_I, Y, N, N, N, N, M_XRD.toM(), MSK_D .toM(), U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSW     -> List(Y, Y, Y, uopSTA.toM()    , FU_MEM.toM(), RT_X  , RT_FIX, RT_FLT, N, IS_S, N, Y, N, N, N, M_XWR.toM(), MSK_W .toM(), U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSD     -> List(Y, Y, N, uopSTA.toM()    , FU_MEM.toM(), RT_X  , RT_FIX, RT_FLT, N, IS_S, N, Y, N, N, N, M_XWR.toM(), MSK_D .toM(), U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      FCLASS_S-> List(Y, Y, Y, uopFCLASS_S,FU_FPU, RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCLASS_D-> List(Y, Y, N, uopFCLASS_D,FU_FPU, RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FCLASS_S-> List(Y, Y, Y, uopFCLASS_S.toM(),FU_FPU.toM(), RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCLASS_D-> List(Y, Y, N, uopFCLASS_D.toM(),FU_FPU.toM(), RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      FMV_S_X -> List(Y, Y, Y, uopFMV_S_X, FU_FPU, RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMV_D_X -> List(Y, Y, N, uopFMV_D_X, FU_FPU, RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMV_X_S -> List(Y, Y, Y, uopFMV_X_S, FU_FPU, RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMV_X_D -> List(Y, Y, N, uopFMV_X_D, FU_FPU, RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FMV_S_X -> List(Y, Y, Y, uopFMV_S_X.toM(), FU_FPU.toM(), RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMV_D_X -> List(Y, Y, N, uopFMV_D_X.toM(), FU_FPU.toM(), RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMV_X_S -> List(Y, Y, Y, uopFMV_X_S.toM(), FU_FPU.toM(), RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMV_X_D -> List(Y, Y, N, uopFMV_X_D.toM(), FU_FPU.toM(), RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      FSGNJ_S -> List(Y, Y, Y, uopFSGNJ_S, FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FSGNJ_D -> List(Y, Y, N, uopFSGNJ_D, FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FSGNJX_S-> List(Y, Y, Y, uopFSGNJ_S, FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FSGNJX_D-> List(Y, Y, N, uopFSGNJ_D, FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FSGNJN_S-> List(Y, Y, Y, uopFSGNJ_S, FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FSGNJN_D-> List(Y, Y, N, uopFSGNJ_D, FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FSGNJ_S -> List(Y, Y, Y, uopFSGNJ_S.toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSGNJ_D -> List(Y, Y, N, uopFSGNJ_D.toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSGNJX_S-> List(Y, Y, Y, uopFSGNJ_S.toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSGNJX_D-> List(Y, Y, N, uopFSGNJ_D.toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSGNJN_S-> List(Y, Y, Y, uopFSGNJ_S.toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSGNJN_D-> List(Y, Y, N, uopFSGNJ_D.toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
       // FP to FP
-      FCVT_S_D-> List(Y, Y, Y, uopFCVT_S_D,FU_FPU, RT_FLT, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_D_S-> List(Y, Y, N, uopFCVT_D_S,FU_FPU, RT_FLT, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FCVT_S_D-> List(Y, Y, Y, uopFCVT_S_D.toM(),FU_FPU.toM(), RT_FLT, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_D_S-> List(Y, Y, N, uopFCVT_D_S.toM(),FU_FPU.toM(), RT_FLT, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
       // Int to FP
-      FCVT_S_W-> List(Y, Y, Y, uopFCVT_S_W ,FU_FPU,RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_S_WU->List(Y, Y, Y, uopFCVT_S_WU,FU_FPU,RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_S_L-> List(Y, Y, Y, uopFCVT_S_L ,FU_FPU,RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_S_LU->List(Y, Y, Y, uopFCVT_S_LU,FU_FPU,RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FCVT_S_W-> List(Y, Y, Y, uopFCVT_S_W .toM(),FU_FPU.toM(),RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_S_WU->List(Y, Y, Y, uopFCVT_S_WU.toM(),FU_FPU.toM(),RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_S_L-> List(Y, Y, Y, uopFCVT_S_L .toM(),FU_FPU.toM(),RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_S_LU->List(Y, Y, Y, uopFCVT_S_LU.toM(),FU_FPU.toM(),RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      FCVT_D_W-> List(Y, Y, N, uopFCVT_D_W ,FU_FPU,RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_D_WU->List(Y, Y, N, uopFCVT_D_WU,FU_FPU,RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_D_L-> List(Y, Y, N, uopFCVT_D_L ,FU_FPU,RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_D_LU->List(Y, Y, N, uopFCVT_D_LU,FU_FPU,RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FCVT_D_W-> List(Y, Y, N, uopFCVT_D_W .toM(),FU_FPU.toM(),RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_D_WU->List(Y, Y, N, uopFCVT_D_WU.toM(),FU_FPU.toM(),RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_D_L-> List(Y, Y, N, uopFCVT_D_L .toM(),FU_FPU.toM(),RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_D_LU->List(Y, Y, N, uopFCVT_D_LU.toM(),FU_FPU.toM(),RT_FLT, RT_FIX, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
       // FP to Int
-      FCVT_W_S-> List(Y, Y, Y, uopFCVT_W_S ,FU_FPU,RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_WU_S->List(Y, Y, Y, uopFCVT_WU_S,FU_FPU,RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_L_S-> List(Y, Y, Y, uopFCVT_L_S ,FU_FPU,RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_LU_S->List(Y, Y, Y, uopFCVT_LU_S,FU_FPU,RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FCVT_W_S-> List(Y, Y, Y, uopFCVT_W_S .toM(),FU_FPU.toM(),RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_WU_S->List(Y, Y, Y, uopFCVT_WU_S.toM(),FU_FPU.toM(),RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_L_S-> List(Y, Y, Y, uopFCVT_L_S .toM(),FU_FPU.toM(),RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_LU_S->List(Y, Y, Y, uopFCVT_LU_S.toM(),FU_FPU.toM(),RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      FCVT_W_D-> List(Y, Y, N, uopFCVT_W_D ,FU_FPU,RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_WU_D->List(Y, Y, N, uopFCVT_WU_D,FU_FPU,RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_L_D-> List(Y, Y, N, uopFCVT_L_D ,FU_FPU,RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FCVT_LU_D->List(Y, Y, N, uopFCVT_LU_D,FU_FPU,RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FCVT_W_D-> List(Y, Y, N, uopFCVT_W_D .toM(),FU_FPU.toM(),RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_WU_D->List(Y, Y, N, uopFCVT_WU_D.toM(),FU_FPU.toM(),RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_L_D-> List(Y, Y, N, uopFCVT_L_D .toM(),FU_FPU.toM(),RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FCVT_LU_D->List(Y, Y, N, uopFCVT_LU_D.toM(),FU_FPU.toM(),RT_FIX, RT_FLT, RT_X  , N, IS_I, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
       // "fp_single" is used for wb_data formatting (and debugging)
-      FEQ_S    ->List(Y, Y, Y, uopFEQ_S  , FU_FPU, RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FLT_S    ->List(Y, Y, Y, uopFLT_S  , FU_FPU, RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FLE_S    ->List(Y, Y, Y, uopFLE_S  , FU_FPU, RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FEQ_S    ->List(Y, Y, Y, uopFEQ_S  .toM(), FU_FPU.toM(), RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FLT_S    ->List(Y, Y, Y, uopFLT_S  .toM(), FU_FPU.toM(), RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FLE_S    ->List(Y, Y, Y, uopFLE_S  .toM(), FU_FPU.toM(), RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      FEQ_D    ->List(Y, Y, N, uopFEQ_D  , FU_FPU, RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FLT_D    ->List(Y, Y, N, uopFLT_D  , FU_FPU, RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FLE_D    ->List(Y, Y, N, uopFLE_D  , FU_FPU, RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FEQ_D    ->List(Y, Y, N, uopFEQ_D  .toM(), FU_FPU.toM(), RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FLT_D    ->List(Y, Y, N, uopFLT_D  .toM(), FU_FPU.toM(), RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FLE_D    ->List(Y, Y, N, uopFLE_D  .toM(), FU_FPU.toM(), RT_FIX, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      FMIN_S   ->List(Y, Y, Y, uopFMIN_S , FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMAX_S   ->List(Y, Y, Y, uopFMAX_S , FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMIN_D   ->List(Y, Y, N, uopFMIN_D , FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMAX_D   ->List(Y, Y, N, uopFMAX_D , FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FMIN_S   ->List(Y, Y, Y, uopFMIN_S .toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMAX_S   ->List(Y, Y, Y, uopFMAX_S .toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMIN_D   ->List(Y, Y, N, uopFMIN_D .toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMAX_D   ->List(Y, Y, N, uopFMAX_D .toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      FADD_S   ->List(Y, Y, Y, uopFADD_S , FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FSUB_S   ->List(Y, Y, Y, uopFSUB_S , FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMUL_S   ->List(Y, Y, Y, uopFMUL_S , FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FADD_D   ->List(Y, Y, N, uopFADD_D , FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FSUB_D   ->List(Y, Y, N, uopFSUB_D , FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMUL_D   ->List(Y, Y, N, uopFMUL_D , FU_FPU, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
+      FADD_S   ->List(Y, Y, Y, uopFADD_S .toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSUB_S   ->List(Y, Y, Y, uopFSUB_S .toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMUL_S   ->List(Y, Y, Y, uopFMUL_S .toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FADD_D   ->List(Y, Y, N, uopFADD_D .toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSUB_D   ->List(Y, Y, N, uopFSUB_D .toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMUL_D   ->List(Y, Y, N, uopFMUL_D .toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
 
-      FMADD_S  ->List(Y, Y, Y, uopFMADD_S, FU_FPU, RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMSUB_S  ->List(Y, Y, Y, uopFMSUB_S, FU_FPU, RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FNMADD_S ->List(Y, Y, Y, uopFNMADD_S,FU_FPU, RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FNMSUB_S ->List(Y, Y, Y, uopFNMSUB_S,FU_FPU, RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMADD_D  ->List(Y, Y, N, uopFMADD_D, FU_FPU, RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FMSUB_D  ->List(Y, Y, N, uopFMSUB_D, FU_FPU, RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FNMADD_D ->List(Y, Y, N, uopFNMADD_D,FU_FPU, RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FNMSUB_D ->List(Y, Y, N, uopFNMSUB_D,FU_FPU, RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N)
+      FMADD_S  ->List(Y, Y, Y, uopFMADD_S.toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMSUB_S  ->List(Y, Y, Y, uopFMSUB_S.toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FNMADD_S ->List(Y, Y, Y, uopFNMADD_S.toM(),FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FNMSUB_S ->List(Y, Y, Y, uopFNMSUB_S.toM(),FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMADD_D  ->List(Y, Y, N, uopFMADD_D.toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FMSUB_D  ->List(Y, Y, N, uopFMSUB_D.toM(), FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FNMADD_D ->List(Y, Y, N, uopFNMADD_D.toM(),FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FNMSUB_D ->List(Y, Y, N, uopFNMSUB_D.toM(),FU_FPU.toM(), RT_FLT, RT_FLT, RT_FLT, Y, IS_X, N, N, N, N, N, M_X        , MSK_X       , U(0), N, N, N, N, N, N, CSRType.N.toM())
     )
 
     // scalastyle:on
@@ -341,10 +343,10 @@ import boom_v1.regfile.MStatus
       //               |  |  |  |           func    dst     |       |       |  |     |  |  |  |  |  mem    mem     |     |  |  |  |  is unique? (clear pipeline for it)
       //               |  |  |  |           unit    regtype |       |       |  |     |  |  |  |  |  cmd    msk     |     |  |  |  |  |  flush on commit
       //               |  |  |  |           |       |       |       |       |  |     |  |  |  |  |  |      |       |     |  |  |  |  |  |  csr cmd
-      FDIV_S    ->List(Y, Y, Y, uopFDIV_S , FU_FDV, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FDIV_D    ->List(Y, Y, N, uopFDIV_D , FU_FDV, RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FSQRT_S   ->List(Y, Y, Y, uopFSQRT_S, FU_FDV, RT_FLT, RT_FLT, RT_X  , N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N),
-      FSQRT_D   ->List(Y, Y, N, uopFSQRT_D, FU_FDV, RT_FLT, RT_FLT, RT_X  , N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N)
+      FDIV_S    ->List(Y, Y, Y, uopFDIV_S .toM(), FU_FDV.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FDIV_D    ->List(Y, Y, N, uopFDIV_D .toM(), FU_FDV.toM(), RT_FLT, RT_FLT, RT_FLT, N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSQRT_S   ->List(Y, Y, Y, uopFSQRT_S.toM(), FU_FDV.toM(), RT_FLT, RT_FLT, RT_X  , N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N.toM()),
+      FSQRT_D   ->List(Y, Y, N, uopFSQRT_D.toM(), FU_FDV.toM(), RT_FLT, RT_FLT, RT_X  , N, IS_X, N, N, N, N, N, M_X  , MSK_X , U(0), N, N, N, N, N, N, CSRType.N.toM())
     )
     // scalastyle:on
   }
@@ -474,14 +476,14 @@ import boom_v1.regfile.MStatus
         ////         //   |  |  |  br type
         ////         //   |  |  |  |
         Array[(MaskedLiteral, List[MaskedLiteral])](
-          JAL     -> List(N, Y, N, IMMType.IS_J),
-          JALR    -> List(N, N, Y, IMMType.IS_I),
-          BEQ     -> List(Y, N, N, IMMType.IS_B),
-          BNE     -> List(Y, N, N, IMMType.IS_B),
-          BGE     -> List(Y, N, N, IMMType.IS_B),
-          BGEU    -> List(Y, N, N, IMMType.IS_B),
-          BLT     -> List(Y, N, N, IMMType.IS_B),
-          BLTU    -> List(Y, N, N, IMMType.IS_B)
+          JAL     -> List(N, Y, N, IMMType.IS_J.toM()),
+          JALR    -> List(N, N, Y, IMMType.IS_I.toM()),
+          BEQ     -> List(Y, N, N, IMMType.IS_B.toM()),
+          BNE     -> List(Y, N, N, IMMType.IS_B.toM()),
+          BGE     -> List(Y, N, N, IMMType.IS_B.toM()),
+          BGEU    -> List(Y, N, N, IMMType.IS_B.toM()),
+          BLT     -> List(Y, N, N, IMMType.IS_B.toM()),
+          BLTU    -> List(Y, N, N, IMMType.IS_B.toM())
         ))
 
     val (cs_is_br: Bool) :: (cs_is_jal: Bool) :: (cs_is_jalr:Bool) :: imm_sel_ :: Nil = bpd_csignals

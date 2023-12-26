@@ -54,6 +54,8 @@ object UOPs extends EasonEnum {
 
   val uopSYSTEM = newElement() // pass uop down the CSR pipeline and let it handle it
 
+
+
 }
 
 object FUType extends EasonEnum {
@@ -62,25 +64,25 @@ object FUType extends EasonEnum {
   defaultEncoding = binaryOneHot
 }
 
-object BranchType extends SpinalEnum {
+object BranchType extends EasonEnum {
   // Branch Type
   val BR_N, BR_NE, BR_EQ, BR_GE, BR_GEU, BR_LT, BR_LTU, BR_J, BR_JR = newElement() // Jump Register
 }
-object MSKType extends SpinalEnum {
+object MSKType extends EasonEnum {
   // Mask Type
   val MSK_B, MSK_H, MSK_W, MSK_D, MSK_BU, MSK_HU, MSK_WU = newElement()
 }
-object MEMType extends SpinalEnum {
+object MEMType extends EasonEnum {
   // Mem Type
   val MT_B, MT_H, MT_W, MT_D, MT_BU, MT_HU, MT_WU = newElement()
 }
 
-object RS1Type extends SpinalEnum {
+object RS1Type extends EasonEnum {
   // RS1 Operand Select Signal
   val OP1_RS1, OP1_ZERO , OP1_PC = newElement()
 }
 
-object RS2Type extends SpinalEnum {
+object RS2Type extends EasonEnum {
   // RS2 Operand Select Signal
   val OP2_RS2 = newElement() // Register Source #2
   val OP2_IMM = newElement() // immediate
@@ -89,7 +91,7 @@ object RS2Type extends SpinalEnum {
   val OP2_IMMC = newElement() // for CSR imm found in RS1}
 }
 
-object IMMType extends SpinalEnum {
+object IMMType extends EasonEnum {
   // Immediate Extend Select
   val IS_I = newElement() // I-Type  (LD,ALU)
   val IS_S = newElement() // S-Type  (ST)
@@ -98,7 +100,7 @@ object IMMType extends SpinalEnum {
   val IS_J = newElement() // UJ-Type (J/JAL)
 }
 
-object CSRType extends SpinalEnum {
+object CSRType extends EasonEnum {
   val N = newElement()
   val W = newElement()
   val S = newElement()

@@ -147,7 +147,7 @@ trait MemoryOpConstants {
   val M_SZ      = 5
   def M_X       = BitMap("b?????");
 
-  object MEMOP extends SpinalEnum {
+  object MEMOP extends EasonEnum {
     val M_XRD = newElement(); // int load
     val M_XWR = newElement(); // int store
     val M_PFR = newElement(); // prefetch with intent to read
