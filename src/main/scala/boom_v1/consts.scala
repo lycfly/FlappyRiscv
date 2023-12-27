@@ -84,9 +84,12 @@ trait ScalarOpConstants {
   val MEN_X = Bool(false)
 
   // Decode Stage Control Signals
-  val RT_FIX = U(0, 2 bits)
-  val RT_FLT = U(1, 2 bits)
-  val RT_PAS = U(3, 2 bits) // pass-through (pop1 := lrs1, etc)
+//  val RT_FIX = U(0, 2 bits)
+//  val RT_FLT = U(1, 2 bits)
+//  val RT_PAS = U(3, 2 bits) // pass-through (pop1 := lrs1, etc)
+  val RT_FIX = MaskedLiteral("00")
+  val RT_FLT = MaskedLiteral("01")
+  val RT_PAS = MaskedLiteral("11") // pass-through (pop1 := lrs1, etc)
 //  val RT_X = U(2, 2 bits) // not-a-register (but shouldn't get a busy-bit, etc.)
 val RT_X = MaskedLiteral("10") // not-a-register (but shouldn't get a busy-bit, etc.)
 

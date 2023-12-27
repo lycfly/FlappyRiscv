@@ -51,7 +51,6 @@ case class Parameters(
                      ) {
   val xLen = 32
   val PRV_SZ = 2
-  val MAX_WAKEUP_DELAY = 3 // unused
   val FETCH_WIDTH = fetchWidth // number of insts we can fetch
   val DECODE_WIDTH = decodeWidth
   val DISPATCH_WIDTH = DECODE_WIDTH // number of insts put into the IssueWindow
@@ -69,6 +68,11 @@ case class Parameters(
   val MAX_BR_COUNT = maxBrCount // number of branches we can speculate simultaneously
   val PHYS_REG_COUNT = numPhysRegisters // size of the unified, physical register file
   val FETCH_BUFFER_SZ = fetchBufferSz // number of instructions that stored between fetch&decode
+  //************************************
+  // Extra Knobs and Features
+  val ENABLE_REGFILE_BYPASSING = true // bypass regfile write ports to read ports
+  val MAX_WAKEUP_DELAY = 3 // unused
+  val ENABLE_COMMIT_MAP_TABLE = enableCommitMapTable
 
   //************************************
   // Implicitly calculated constants
