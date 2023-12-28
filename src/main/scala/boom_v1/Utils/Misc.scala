@@ -7,6 +7,29 @@ import spinal.core.sim._
 import spinal.lib._
 
 import scala.math.log
+
+/** Given an association of values to enable signals, returns the first value with an associated
+  * high enable signal.
+  *
+  * @example {{{
+  * MuxCase(default, Array(c1 -> a, c2 -> b))
+  * }}}
+  */
+object MuxCase {
+
+  /** @param default the default value if none are enabled
+    * @param mapping a set of data values with associated enables
+    * @return the first value in mapping that is enabled
+    */
+  def apply[T <: Data](default: T, mapping: Seq[(Bool, T)]): T = {
+    var res = default
+    for ((t, v) <- mapping.reverse) {
+      res = Mux(t, v, res)
+    }
+    res
+  }
+}
+
 object PopCountAtLeast {
   private def two(x: UInt): (Bool, Bool) = x.getWidth match {
     case 1 => (x.asBool, False)
