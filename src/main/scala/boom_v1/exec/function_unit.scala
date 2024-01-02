@@ -1,10 +1,24 @@
 package boom_v1.exec
 
-import boom_v1.Parameters
+import boom_v1.{MaskedDC, Parameters}
 import boom_v1.predictor.BranchPredictionResp
 import spinal.sim._
 import spinal.core._
 import spinal.lib._
+object FUConstants
+{
+  // bit mask, since a given execution pipeline may support multiple functional units
+  val FUC_SZ = 8
+  val FU_X   = MaskedDC(FUC_SZ)
+  val FU_ALU = U(  1, FUC_SZ bits)
+  val FU_BRU = U(  2, FUC_SZ bits)
+  val FU_MEM = U(  4, FUC_SZ bits)
+  val FU_MUL = U(  8, FUC_SZ bits)
+  val FU_DIV = U( 16, FUC_SZ bits)
+  val FU_FPU = U( 32, FUC_SZ bits)
+  val FU_CSR = U( 64, FUC_SZ bits)
+  val FU_FDV = U(128, FUC_SZ bits)
+}
 // tell the FUDecoders what units it needs to support
 class SupportedFuncUnits(
                           val alu: Boolean  = false,

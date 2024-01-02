@@ -60,7 +60,7 @@ import spinal.lib._
     val element = RegInit(U(0, p.PREG_SZ bits))
 
     // handle branch speculation
-    val element_br_copies = Mem(UInt(width = p.PREG_SZ bits), p.MAX_BR_COUNT)
+    val element_br_copies = Mem(HardType.implFactory(UInt(width = p.PREG_SZ bits)), p.MAX_BR_COUNT)
 
 
     // this is possibly the hardest piece of code I have ever had to reason about in my LIFE.
@@ -72,13 +72,13 @@ import spinal.lib._
     // 2nd, is older instructions in same bundle
     // 3rd, current element
 
-    for (w <- 0 until pipeline_width)
+    for (w: Int <- intWrapper(0) until pipeline_width)
     {
       var elm_cases = Array((Bool(false),  U(0,p.PREG_SZ bits)))
 
-      for (xx <- w to 0 by -1)
+      for (xx: Int <- intWrapper(w) to 0 by -1)
       {
-        elm_cases ++= Array((io.wens(xx),  io.ren_pdsts(xx)))
+        refArrayOps(elm_cases) ++= refArrayOps(Array((io.wens(xx),  io.ren_pdsts(xx))))
       }
 
       when (io.ren_br_vals(w))
@@ -198,18 +198,18 @@ import spinal.lib._
     var allocated                = (Vec(Bool(), pl_width)) // did each inst get allocated a register?
 
     // init
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       allocated(w) := Bool(false)
     }
 
 
-    for (i <- 1 until num_phys_registers) // note: p0 stays zero
+    for (i: Int <- 1 until num_phys_registers) // note: p0 stays zero
     {
       val next_allocated = Vec(Bool(), pl_width)
       var can_allocate = free_list(i)
 
-      for (w <- 0 until pl_width)
+      for (w: Int <- 0 until pl_width)
       {
         requested_pregs_oh_array(w)(i) = can_allocate && !allocated(w)
 
@@ -220,7 +220,7 @@ import spinal.lib._
       allocated = next_allocated
     }
 
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       requested_pregs_oh(w) := Vec(requested_pregs_oh_array(w)).asBits
       requested_pregs(w) := PriorityEncoder(requested_pregs_oh(w))
@@ -242,9 +242,9 @@ import spinal.lib._
     // track which allocation_lists just got cleared out by a branch,
     // to enforce a write priority to allocation_lists()
     val br_cleared = (Vec(Bool(), p.MAX_BR_COUNT))
-    for (i <- 0 until p.MAX_BR_COUNT) { br_cleared(i) := Bool(false) }
+    for (i: Int <- 0 until p.MAX_BR_COUNT) { br_cleared(i) := Bool(false) }
 
-    for (w <- pl_width-1 to 0 by -1)
+    for (w: Int <- pl_width-1 to 0 by -1)
     {
       // When branching, start a fresh copy of the allocation_list
       // but don't forget to bypass in the allocations within our bundle
@@ -259,7 +259,7 @@ import spinal.lib._
         just_allocated_mask)
     }
 
-    for (i <- 0 until p.MAX_BR_COUNT)
+    for (i: Int <- 0 until p.MAX_BR_COUNT)
     {
       when (!br_cleared(i))
       {
@@ -269,7 +269,7 @@ import spinal.lib._
 
 
     // ** Set enqueued PREG to "Free" ** //
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       enq_mask(w) := B(0,num_phys_registers bits)
       when (io.enq_vals(w))
@@ -300,7 +300,7 @@ import spinal.lib._
       free_list := allocation_list | free_list | (enq_mask.reduce(_|_))
 
       // set other branch allocation_lists to zero where allocation_list(j) == 1...
-      for (i <- 0 until p.MAX_BR_COUNT)
+      for (i: Int <- 0 until p.MAX_BR_COUNT)
       {
         allocation_lists(i) := allocation_lists(i) & ~allocation_list
       }
@@ -316,7 +316,7 @@ import spinal.lib._
 
       val com_mask = (Vec(Bits(width=num_phys_registers bits),pl_width))
       val stale_mask = (Vec(Bits(width=num_phys_registers bits),pl_width))
-      for (w <- 0 until pl_width)
+      for (w: Int <- 0 until pl_width)
       {
         com_mask(w) := B(0,width=num_phys_registers bits)
         stale_mask(w) := B(0,width=num_phys_registers bits)
@@ -385,7 +385,7 @@ import spinal.lib._
     //val table_bsy = Reg(init=Bits(0,PHYS_REG_COUNT))
     val table_bsy = RegInit(Vec.fill(p.PHYS_REG_COUNT){Bool(false)})
 
-    for (wb_idx <- 0 until num_wb_ports)
+    for (wb_idx: Int <- 0 until num_wb_ports)
     {
       when (io.unbusy_pdst(wb_idx).valid)
       {
@@ -393,7 +393,7 @@ import spinal.lib._
       }
     }
 
-    for (w <- 0 until pipeline_width)
+    for (w: Int <- 0 until pipeline_width)
     {
       when (io.allocated_pdst(w).valid && io.allocated_pdst(w).payload =/= U(0))
       {
@@ -402,9 +402,9 @@ import spinal.lib._
     }
 
     // handle bypassing a clearing of the busy-bit
-    for (ridx <- 0 until num_read_ports)
+    for (ridx: Int <- 0 until num_read_ports)
     {
-      val just_cleared = io.unbusy_pdst.map(p => p.valid && (p.payload === io.p_rs(ridx))).reduce(_|_)
+      val just_cleared = io.unbusy_pdst.map((p: _root_.spinal.lib.Flow[_root_.spinal.core.UInt]) => p.valid && (p.payload === io.p_rs(ridx))).reduce(_|_)
       // note: no bypassing of the newly busied (that is done outside this module)
       io.p_rs_busy(ridx) := (table_bsy(io.p_rs(ridx)) && !just_cleared)
     }
@@ -469,7 +469,7 @@ import spinal.lib._
 
     //-------------------------------------------------------------
     // Set outputs up... we'll write in the pop*/pdst info below
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       io.ren_mask(w)         := io.dec_mask(w) && io.inst_can_proceed(w) && !io.kill
       io.ren_uops(w)         := io.dec_uops(w)
@@ -483,7 +483,7 @@ import spinal.lib._
 
     val map_table_io = Vec.fill(p.LOGICAL_REG_COUNT) { (new RenameMapTableElement(p.DECODE_WIDTH)).io }
 
-    for (i <- 0 until p.LOGICAL_REG_COUNT)
+    for (i: Int <- 0 until p.LOGICAL_REG_COUNT)
     {
       map_table_io(i).rollback_wen := Bool(false)
       map_table_io(i).rollback_stale_pdst := io.com_uops(0).stale_pdst
@@ -491,7 +491,7 @@ import spinal.lib._
       map_table_io(i).commit_wen := Bool(false)
       map_table_io(i).commit_pdst := io.com_uops(0).pdst
 
-      for (w <- 0 until pl_width)
+      for (w: Int <- 0 until pl_width)
       {
         map_table_io(i).wens(w)        := io.ren_uops(w).ldst === U(i) &&
           io.ren_mask(w) &&
@@ -514,7 +514,7 @@ import spinal.lib._
     }
 
     // backwards, because rollback must give highest priority to 0 (the oldest instruction)
-    for (w <- pl_width-1 to 0 by -1)
+    for (w: Int <- pl_width-1 to 0 by -1)
     {
       val ldst = io.com_uops(w).ldst
 
@@ -527,7 +527,7 @@ import spinal.lib._
 
     if (p.ENABLE_COMMIT_MAP_TABLE)
     {
-      for (w <- 0 until pl_width)
+      for (w: Int <- 0 until pl_width)
       {
         val ldst = io.com_uops(w).ldst
         when (io.com_valids(w) && (io.com_uops(w).dst_rtype === RT_FIX.value || io.com_uops(w).dst_rtype === RT_FLT.value))
@@ -545,7 +545,7 @@ import spinal.lib._
     def map_table_prs3(w:Int) = map_table_output(w+2*pl_width)
 
 
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       map_table_prs1(w) := map_table_io(io.ren_uops(w).lrs1).element
       map_table_prs2(w) := map_table_io(io.ren_uops(w).lrs2).element
@@ -560,7 +560,7 @@ import spinal.lib._
     val prs2_was_bypassed = (Vec(Bool(),pl_width))
     val prs3_was_bypassed = (Vec(Bool(),pl_width))
 
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       var rs1_cases =  Array((Bool(false),  U(0,p.PREG_SZ bits)))
       var rs2_cases =  Array((Bool(false),  U(0,p.PREG_SZ bits)))
@@ -573,7 +573,7 @@ import spinal.lib._
 
       // Handle bypassing new physical destinations to operands (and stale destination)
       // scalastyle:off
-      for (xx <- w-1 to 0 by -1)
+      for (xx: Int <- w-1 to 0 by -1)
       {
         rs1_cases  ++= Array(((io.ren_uops(w).lrs1_rtype === RT_FIX.value || io.ren_uops(w).lrs1_rtype === RT_FLT.value)
           && io.ren_mask(xx) && io.ren_uops(xx).ldst_val && (io.ren_uops(w).lrs1 === io.ren_uops(xx).ldst), (io.ren_uops(xx).pdst)))
@@ -618,7 +618,7 @@ import spinal.lib._
     // TODO optimize - too many write ports, but how to deal with that? (slow + fast...)
     val bsy_table = (new BusyTable(pipeline_width=pl_width, num_read_ports = pl_width*max_operands, num_wb_ports=num_wb_ports))
 
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       // Reading the Busy Bits
       // for critical path reasons, we speculatively read out the busy-bits assuming no dependencies between uops
@@ -649,7 +649,7 @@ import spinal.lib._
     }
 
     // Clear Busy-bit
-    for (i <- 0 until num_wb_ports)
+    for (i: Int <- 0 until num_wb_ports)
     {
       bsy_table.io.unbusy_pdst(i).valid := io.wb_valids(i)
       bsy_table.io.unbusy_pdst(i).payload := io.wb_pdsts(i)
@@ -662,7 +662,7 @@ import spinal.lib._
 
     val freelist = (new RenameFreeList(p.PHYS_REG_COUNT, pl_width))
 
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       freelist.io.req_preg_vals(w) := (io.inst_can_proceed(w) &&
         !io.kill &&
@@ -672,7 +672,7 @@ import spinal.lib._
     }
     freelist_req_pregs := freelist.io.req_pregs
 
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       freelist.io.enq_vals(w)    := io.com_valids(w) &&
         (io.com_uops(w).dst_rtype === RT_FIX.value || io.com_uops(w).dst_rtype === RT_FLT.value) &&
@@ -702,7 +702,7 @@ import spinal.lib._
 
 
     // x0 is a special-case and should not be renamed
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       io.ren_uops(w).pdst := Mux(io.ren_uops(w).ldst === U(0), U(0), freelist_req_pregs(w))
     }
@@ -716,7 +716,7 @@ import spinal.lib._
     // TODO use Mem(), but it chokes on the undefines in VCS
     val prediction_copies = Reg(Vec(new BranchPredictionResp, p.MAX_BR_COUNT))
 
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       when(ren_br_vals(w))
       {
@@ -731,7 +731,7 @@ import spinal.lib._
 
     //-------------------------------------------------------------
     // Outputs
-    for (w <- 0 until pl_width)
+    for (w: Int <- 0 until pl_width)
     {
       // TODO REFACTOR, make == rt_x?
       io.inst_can_proceed(w) := (freelist.io.can_allocate(w) ||

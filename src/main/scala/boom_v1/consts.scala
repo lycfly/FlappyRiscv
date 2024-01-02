@@ -1,6 +1,9 @@
 package boom_v1
 
 import EasonLib.Utils.Enum.EasonEnum
+import boom_v1.BranchType._
+import boom_v1.UOPs._
+import flappyOoO.FU_TYPE.ALU
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
@@ -94,6 +97,31 @@ trait ScalarOpConstants {
 val RT_X = MaskedLiteral("10") // not-a-register (but shouldn't get a busy-bit, etc.)
 
   // TODO rename RT_NAR
+
+  def NullMicroOp()(implicit p: Parameters): MicroOp = {
+    val uop = (new MicroOp()(p))
+    uop.uopc := uopNOP // maybe not required, but helps on asserts that try to catch spurious behavior
+    uop.bypassable := Bool(false)
+    uop.fp_val := Bool(false)
+    uop.is_store := Bool(false)
+    uop.is_load := Bool(false)
+    uop.pdst := U(0)
+    uop.dst_rtype := RT_X
+    uop.valid := Bool(false)
+    // TODO these unnecessary? used in regread stage?
+    uop.is_br_or_jmp := Bool(false)
+
+    val cs = (new CtrlSignals())
+    cs.br_type := BR_N
+    cs.rf_wen := Bool(false)
+    cs.csr_cmd := CSR.N
+    cs.is_load := Bool(false)
+    cs.is_sta := Bool(false)
+    cs.is_std := Bool(false)
+
+    uop.ctrl := cs
+    uop
+  }
 }
 object RISCVConstants
 {
