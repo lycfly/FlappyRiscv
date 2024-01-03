@@ -122,7 +122,7 @@ import spinal.lib._
 
       for (w <- 0 until issue_width)
       {
-        val can_allocate = (issue_slots(i).uop.fu_code & io.fu_types(w)) =/= U(0)
+        val can_allocate = (issue_slots(i).uop.fu_code.asBits & io.fu_types(w).asBits) =/= U(0)
 
         when (requests(i) && !uop_issued && can_allocate && !port_issued(w))
         {

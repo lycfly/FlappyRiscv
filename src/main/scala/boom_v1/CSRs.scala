@@ -88,12 +88,12 @@ object CSR
   // commands
   val SZ = 3
   def X = MaskedDC(SZ)
-  def N = U(0,SZ bits)
-  def W = U(1,SZ bits)
-  def S = U(2,SZ bits)
-  def C = U(3,SZ bits)
-  def I = U(4,SZ bits)
-  def R = U(5,SZ bits)
+  def N = MaskedLiteral("000")
+  def W = MaskedLiteral("001")
+  def S= MaskedLiteral("010")
+  def C = MaskedLiteral("011")
+  def I = MaskedLiteral("100")
+  def R = MaskedLiteral("101")
 
   val ADDRSZ = 12
   def debugIntCause = new MIP().getBitsWidth

@@ -56,6 +56,8 @@ trait ScalarOpConstants {
   val IS_X = MaskedDC(IMMType().getBitsWidth)
   val MSK_X = MaskedDC(MSKType().getBitsWidth)
   val CSR_X = MaskedDC(CSRType().getBitsWidth)
+  val OP1_X = MaskedDC(RS1Type().getBitsWidth)
+  val OP2_X = MaskedDC(RS2Type().getBitsWidth)
 
   //************************************
   // Control Signals
@@ -71,16 +73,20 @@ trait ScalarOpConstants {
   val PC_JALR = U(2, 2 bits) // jump_reg_target
 
   // Register File Write Enable Signal
-  val REN_0 = Bool(false)
-  val REN_1 = Bool(true)
-
+//  val REN_0 = Bool(false)
+//  val REN_1 = Bool(true)
+  val REN_0 = MaskedLiteral("0")
+  val REN_1 = MaskedLiteral("1")
   // Is 32b Word or 64b Doubldword?
   val SZ_DW = 1
-  val DW_X = Bool(true) // Bool(xLen==64)
-  val DW_32 = Bool(false)
-  val DW_64 = Bool(true)
-  val DW_XPR = Bool(true) // Bool(xLen==64)
-
+//  val DW_X = Bool(true) // Bool(xLen==64)
+//  val DW_32 = Bool(false)
+//  val DW_64 = Bool(true)
+//  val DW_XPR = Bool(true) // Bool(xLen==64)
+  val DW_X = MaskedLiteral("1") // Bool(xLen==64)
+  val DW_32 = MaskedLiteral("0")
+  val DW_64 = MaskedLiteral("1")
+  val DW_XPR = MaskedLiteral("1") // Bool(xLen==64)
   // Memory Enable Signal
   val MEN_0 = Bool(false)
   val MEN_1 = Bool(true)

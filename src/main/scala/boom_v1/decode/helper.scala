@@ -3,6 +3,8 @@ import boom_v1.MaskedDC
 import spinal.core._
 import spinal.lib._
 object DecodeLogic {
+  implicit def int2Masked(i:Int) = new MaskedLiteral( BigInt(i), BigInt(2).pow(log2Up(i+1)) - 1 , log2Up(i+1))
+
   def term(lit: MaskedLiteral) =
     new Term(lit.value, BigInt(2).pow(lit.getWidth) - (lit.careAbout + 1)) // 2^n - careabout - 1 = 11111111(2^n-1) - 11001100(mask)
 
@@ -49,11 +51,11 @@ object DecodeLogic {
       yield apply(addr, thisDefault, thisMapping)
   }
 
-  def apply(addr: UInt, default: Seq[MaskedLiteral], mappingIn: List[(UInt, Seq[MaskedLiteral])]): Seq[UInt] =
-    apply(addr, default, mappingIn.map(m => (MaskedLiteral(m._1), m._2)).asInstanceOf[Iterable[(MaskedLiteral, Seq[MaskedLiteral])]])
+  def apply(addr: UInt, default: Seq[MaskedLiteral], mappingIn: List[(Int, Seq[MaskedLiteral])]): Seq[UInt] =
+    apply(addr, default, mappingIn.map(m => (m._1, m._2)).asInstanceOf[Iterable[(MaskedLiteral, Seq[MaskedLiteral])]])
 
-  def apply(addr: UInt, trues: Iterable[UInt], falses: Iterable[UInt]): Bool =
-    apply(addr, MaskedDC(1), trues.map(MaskedLiteral(_) -> MaskedLiteral("b1")) ++ falses.map(MaskedLiteral(_) -> MaskedLiteral("b0"))).toBool
+  def apply(addr: UInt, trues: Iterable[Int], falses: Iterable[Int]): Bool =
+    apply(addr, MaskedDC(1), trues.map(_ -> MaskedLiteral("b1")) ++ falses.map(_ -> MaskedLiteral("b0")))
 
   private val caches = collection.mutable.Map[UInt, collection.mutable.Map[Term, Bool]]()
 }

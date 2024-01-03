@@ -212,7 +212,7 @@ class CtrlSignals extends Bundle() {
   val op1_sel = RS1Type()
   val op2_sel = RS2Type()
   val imm_sel = IMMType()
-  val op_fcn = UInt(width = ALUFN().SZ_ALU_FN bits)
+  val op_fcn = UInt(width = ALUFN().getBitsWidth bits)
   val fcn_dw = Bool()
   val rf_wen = Bool()
   val csr_cmd = UInt(width = 3 bits) //rocket.CSR.SZ
