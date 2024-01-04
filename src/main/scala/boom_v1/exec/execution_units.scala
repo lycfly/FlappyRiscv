@@ -6,19 +6,30 @@ import spinal.core._
 import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 
+//******************************************************************************
+// Copyright (c) 2015, The Regents of the University of California (Regents).
+// All Rights Reserved. See LICENSE for license details.
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
+// RISC-V Constructing the Execution Units
+//------------------------------------------------------------------------------
+//------------------------------------------------------------------------------
 
-class ExecutionUnits(implicit val p: Parameters) extends Component
+
+class ExecutionUnits(implicit val p: Parameters)
 {
-  if (p.decodeWidth == 1)      println("\n   ~*** One-wide Machine ***~\n")
-  else if (p.decodeWidth == 2) println("\n   ~*** Two-wide Machine ***~\n")
-  else if (p.decodeWidth == 4) println("\n   ~*** Four-wide Machine ***~\n")
+  if (p.DECODE_WIDTH == 1)      println("\n   ~*** One-wide Machine ***~\n")
+  else if (p.DECODE_WIDTH == 2) println("\n   ~*** Two-wide Machine ***~\n")
+  else if (p.DECODE_WIDTH == 4) println("\n   ~*** Four-wide Machine ***~\n")
   else                        println("\n ~*** Unknown Machine Width ***~\n")
 
-  require (p.issueWidth <= 4)
-  if (p.issueWidth == 1) println("    -== Single Issue ==- \n")
-  if (p.issueWidth == 2) println("    -== Dual Issue ==- \n")
-  if (p.issueWidth == 3) println("    -== Triple Issue ==- \n")
-  if (p.issueWidth == 4) println("    -== Quad Issue ==- \n")
+  require (p.ISSUE_WIDTH <= 4)
+  if (p.ISSUE_WIDTH == 1) println("    -== Single Issue ==- \n")
+  if (p.ISSUE_WIDTH == 2) println("    -== Dual Issue ==- \n")
+  if (p.ISSUE_WIDTH == 3) println("    -== Triple Issue ==- \n")
+  if (p.ISSUE_WIDTH == 4) println("    -== Quad Issue ==- \n")
+
+
   //*******************************
   // Instantiate the ExecutionUnits
 
@@ -31,90 +42,100 @@ class ExecutionUnits(implicit val p: Parameters) extends Component
 
   def apply(n: Int) = exe_units(n)
 
-  def map[T](f: ExecutionUnit => T) = {
+  def map[T](f: ExecutionUnit => T) =
+  {
     exe_units.map(f)
   }
 
-  def withFilter(f: ExecutionUnit => Boolean) = {
+  def withFilter(f: ExecutionUnit => Boolean) =
+  {
     exe_units.withFilter(f)
   }
 
-  lazy val memory_unit = {
-    require(exe_units.count(_.is_mem_unit) == 1) // only one mem_unit supported
+  lazy val memory_unit =
+  {
+    require (exe_units.count(_.is_mem_unit) == 1) // only one mem_unit supported
     exe_units.find(_.is_mem_unit).get
   }
 
-  lazy val br_unit = {
-    require(exe_units.count(_.hasBranchUnit) == 1)
+  lazy val br_unit =
+  {
+    require (exe_units.count(_.hasBranchUnit) == 1)
     exe_units.find(_.hasBranchUnit).get
   }
 
-  lazy val br_unit_io = {
-    require(exe_units.count(_.hasBranchUnit) == 1)
+  lazy val br_unit_io =
+  {
+    require (exe_units.count(_.hasBranchUnit) == 1)
     (exe_units.find(_.hasBranchUnit).get).io.br_unit
   }
 
-  lazy val br_unit_idx = {
+  lazy val br_unit_idx =
+  {
     exe_units.indexWhere(_.hasBranchUnit)
   }
 
 
-  if (ISSUE_WIDTH == 1) {
-    exe_units += Module(new ALUMemExeUnit(is_branch_unit = true
+  if (p.ISSUE_WIDTH == 1)
+  {
+    exe_units += (new ALUMemExeUnit(is_branch_unit   = true
       , shares_csr_wport = true
-      , fp_mem_support = usingFPU
-      , has_fpu = usingFPU
-      , has_mul = true
-      , has_div = true
-      , use_slow_mul = false
-      , has_fdiv = usingFPU && usingFDivSqrt
+      , fp_mem_support   = p.usingFPU
+      , has_fpu          = p.usingFPU
+      , has_mul          = true
+      , has_div          = true
+      , use_slow_mul     = false
+      , has_fdiv         = p.usingFPU && p.usingFDivSqrt
     ))
   }
-  else if (ISSUE_WIDTH == 2) {
-    exe_units += Module(new ALUExeUnit(is_branch_unit = true
+  else if (p.ISSUE_WIDTH == 2)
+  {
+    exe_units += (new ALUExeUnit(is_branch_unit      = true
       , shares_csr_wport = true
-      , has_fpu = usingFPU
-      , has_mul = true
+      , has_fpu          = p.usingFPU
+      , has_mul          = true
     ))
-    exe_units += Module(new ALUMemExeUnit(fp_mem_support = usingFPU
-      , has_div = true
-      , has_fdiv = usingFPU && usingFDivSqrt
+    exe_units += (new ALUMemExeUnit(fp_mem_support   = p.usingFPU
+      , has_div          = true
+      , has_fdiv         = p.usingFPU && p.usingFDivSqrt
     ))
   }
-  else if (ISSUE_WIDTH == 3) {
-    exe_units += Module(new ALUExeUnit(is_branch_unit = true
+  else if (p.ISSUE_WIDTH == 3)
+  {
+    exe_units += (new ALUExeUnit(is_branch_unit      = true
       , shares_csr_wport = true
-      , has_fpu = usingFPU
-      , has_mul = true
+      , has_fpu          = p.usingFPU
+      , has_mul          = true
     ))
-    exe_units += Module(new ALUExeUnit(has_div = true
-      , has_fdiv = usingFPU && usingFDivSqrt
+    exe_units += (new ALUExeUnit(has_div             = true
+      , has_fdiv         = p.usingFPU && p.usingFDivSqrt
     ))
-    exe_units += Module(new MemExeUnit())
+    exe_units += (new MemExeUnit())
   }
-  else {
-    require(ISSUE_WIDTH == 4)
-    exe_units += Module(new ALUExeUnit(is_branch_unit = false
+  else
+  {
+    require (p.ISSUE_WIDTH == 4)
+    exe_units += (new ALUExeUnit(is_branch_unit      = false
       , shares_csr_wport = true
-      , has_fpu = usingFPU
-      , has_mul = true
+      , has_fpu          = p.usingFPU
+      , has_mul          = true
     ))
-    exe_units += Module(new ALUExeUnit(is_branch_unit = true))
-    exe_units += Module(new ALUExeUnit(has_div = true
-      , has_fdiv = usingFPU && usingFDivSqrt
+    exe_units += (new ALUExeUnit(is_branch_unit      = true))
+    exe_units += (new ALUExeUnit(has_div             = true
+      , has_fdiv         = p.usingFPU && p.usingFDivSqrt
     ))
-    exe_units += Module(new MemExeUnit())
+    exe_units += (new MemExeUnit())
   }
 
-  require(exe_units.length != 0)
-  require(exe_units.map(_.is_mem_unit).reduce(_ | _), "Datapath is missing a memory unit.")
-  require(exe_units.map(_.has_mul).reduce(_ | _), "Datapath is missing a multiplier.")
-  require(exe_units.map(_.has_div).reduce(_ | _), "Datapath is missing a divider.")
-  require(exe_units.map(_.has_fpu).reduce(_ | _) == usingFPU, "Datapath is missing a fpu (or has an fpu and shouldnt).")
+  require (exe_units.length != 0)
+  require (exe_units.map(_.is_mem_unit).reduce(_|_), "Datapath is missing a memory unit.")
+  require (exe_units.map(_.has_mul).reduce(_|_), "Datapath is missing a multiplier.")
+  require (exe_units.map(_.has_div).reduce(_|_), "Datapath is missing a divider.")
+  require (exe_units.map(_.has_fpu).reduce(_|_) == p.usingFPU, "Datapath is missing a fpu (or has an fpu and shouldnt).")
 
-  val num_rf_read_ports = exe_units.map(_.num_rf_read_ports).reduce[Int](_ + _)
-  val num_rf_write_ports = exe_units.map(_.num_rf_write_ports).reduce[Int](_ + _)
-  val num_total_bypass_ports = exe_units.withFilter(_.isBypassable).map(_.numBypassPorts).reduce[Int](_ + _)
+  val num_rf_read_ports = exe_units.map(_.num_rf_read_ports).reduce[Int](_+_)
+  val num_rf_write_ports = exe_units.map(_.num_rf_write_ports).reduce[Int](_+_)
+  val num_total_bypass_ports = exe_units.withFilter(_.isBypassable).map(_.numBypassPorts).reduce[Int](_+_)
   val num_fast_wakeup_ports = exe_units.count(_.isBypassable)
   // TODO reduce the number of slow wakeup ports - currently have every write-port also be a slow-wakeup-port.
   val num_slow_wakeup_ports = num_rf_write_ports
@@ -122,27 +143,9 @@ class ExecutionUnits(implicit val p: Parameters) extends Component
   // val num_slow_wakeup_ports = exe_units.map(_.num_variable_write_ports).reduce[Int](_+_)
 
   // TODO bug, this can return too many fflag ports,e.g., the FPU is shared with the mem unit and thus has two wb ports
-  val num_fpu_ports = exe_units.withFilter(_.hasFFlags).map(_.num_rf_write_ports).foldLeft(0)(_ + _)
+  val num_fpu_ports = exe_units.withFilter(_.hasFFlags).map(_.num_rf_write_ports).foldLeft(0)(_+_)
 
   val num_wakeup_ports = num_slow_wakeup_ports + num_fast_wakeup_ports
-  val rf_cost = (num_rf_read_ports + num_rf_write_ports) * (num_rf_read_ports + 2 * num_rf_write_ports)
+  val rf_cost = (num_rf_read_ports+num_rf_write_ports)*(num_rf_read_ports+2*num_rf_write_ports)
 }
 
-
-object execute_unit_inst {
-  def main(args: Array[String]): Unit = {
-    SpinalConfig(
-      defaultConfigForClockDomains = ClockDomainConfig(resetKind = ASYNC,
-        clockEdge = RISING,
-        resetActiveLevel = LOW),
-      mode = Verilog,
-      oneFilePerComponent = false,
-      nameWhenByFile = false,
-      inlineConditionalExpression = true,
-      enumPrefixEnable = false,
-      anonymSignalPrefix = "tmp",
-      targetDirectory = "rtl_gen")
-      .addStandardMemBlackboxing(blackboxAll)
-      .generate(new execute_unit())
-  }.printPruned()
-}

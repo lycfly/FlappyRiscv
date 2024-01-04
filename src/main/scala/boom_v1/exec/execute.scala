@@ -1,12 +1,16 @@
 package boom_v1.exec
 
+import boom_v1.exec.FPU.FPConstants
+import boom_v1.exec.FUConstants._
 import boom_v1.predictor.{BHTUpdate, BTBUpdate}
+import boom_v1.regfile.MStatus
 import boom_v1.{Causes, FUType, MicroOp, Parameters}
 import spinal.sim._
 import spinal.core._
 import spinal.core.sim._
 import spinal.lib._
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 import scala.language.postfixOps
 //******************************************************************************
@@ -26,31 +30,30 @@ import scala.language.postfixOps
 // read ports, and one or more writeports.
 
 
-  class ExeUnitResp(data_width: Int)(implicit p: Parameters) extends BoomBundle()(p)
+  class ExeUnitResp(data_width: Int)(implicit p: Parameters) extends Bundle
   {
     val uop = new MicroOp()
-    val data = Bits(width = data_width)
-    val fflags = new ValidIO(new FFlagsResp) // write fflags to ROB
-    override def cloneType: this.type = new ExeUnitResp(data_width).asInstanceOf[this.type]
+    val data = Bits(width = data_width bits)
+    val fflags = Flow(new FFlagsResp) // write fflags to ROB
   }
 
-  class FFlagsResp(implicit p: Parameters) extends BoomBundle()(p)
+  class FFlagsResp(implicit p: Parameters) extends Bundle
   {
     val uop = new MicroOp()
-    val flags = Bits(width=tile.FPConstants.FLAGS_SZ)
+    val flags = Bits(width=FPConstants.FLAGS_SZ bits)
   }
 
   class ExecutionUnitIO(num_rf_read_ports: Int
                         , num_rf_write_ports: Int
                         , num_bypass_ports: Int
                         , data_width: Int
-                       )(implicit p: Parameters) extends BoomBundle()(p)
+                       )(implicit p: Parameters) extends Bundle
   {
     // describe which functional units we support (used by the issue window)
-    val fu_types = Bits(OUTPUT, FUC_SZ)
+    val fu_types = out Bits(FUC_SZ bits)
 
-    val req     = (new DecoupledIO(new FuncUnitReq(data_width))).flip
-    val resp    = Vec(num_rf_write_ports, new DecoupledIO(new ExeUnitResp(data_width)))
+    val req     = slave(Stream(new FuncUnitReq(data_width)))
+    val resp    = Vec(master(Stream(new ExeUnitResp(data_width))),num_rf_write_ports)
     val bypass  = new BypassData(num_bypass_ports, data_width).asOutput
     val brinfo  = new BrResolutionInfo().asInput
 
@@ -58,15 +61,15 @@ import scala.language.postfixOps
     val br_unit = new BranchUnitResp().asOutput
     val get_rob_pc = new RobPCRequest().flip
     val get_pred = new GetPredictionInfo
-    val status = new rocket.MStatus().asInput
+    val status = new MStatus().asInput
 
     // only used by the fpu unit
-    val fcsr_rm = Bits(INPUT, tile.FPConstants.RM_SZ)
+    val fcsr_rm = in Bits(FPConstants.RM_SZ bits)
 
     // only used by the mem unit
-    val lsu_io = new LoadStoreUnitIO(DECODE_WIDTH).flip
+    val lsu_io = new LoadStoreUnitIO(p.DECODE_WIDTH).flip
     val dmem   = new DCMemPortIO() // TODO move this out of ExecutionUnit
-    val com_exception = Bool(INPUT)
+    val com_exception = in Bool()
   }
 
   abstract class ExecutionUnit(val num_rf_read_ports: Int
@@ -83,12 +86,12 @@ import scala.language.postfixOps
                                , val has_mul       : Boolean       = false
                                , val has_div       : Boolean       = false
                                , val has_fdiv      : Boolean       = false
-                              )(implicit p: Parameters) extends BoomModule()(p)
+                              )(implicit p: Parameters) extends Module
   {
     val io = new ExecutionUnitIO(num_rf_read_ports, num_rf_write_ports
       , num_bypass_stages, data_width)
 
-    io.resp.map(_.bits.fflags.valid := Bool(false))
+    io.resp.foreach(_.payload.fflags.valid := Bool(value = false))
 
     // TODO add "number of fflag ports", so we can properly account for FPU+Mem combinations
     def numBypassPorts: Int = num_bypass_stages
@@ -135,43 +138,44 @@ import scala.language.postfixOps
   {
     val has_muldiv = has_div || (has_mul && use_slow_mul)
 
-    require(dfmaLatency == 3) // fix the above num_bypass_stages==3 hack before removing this line
+    require(p.dfmaLatency == 3) // fix the above num_bypass_stages==3 hack before removing this line
 
     println ("     ExeUnit--")
     println ("       - ALU")
-    if (has_fpu) println ("       - FPU (Latency: " + dfmaLatency + ")")
+    if (has_fpu) println ("       - FPU (Latency: " + p.dfmaLatency + ")")
     if (has_mul && !use_slow_mul) println ("       - Mul (pipelined)")
     if (has_div && has_mul && use_slow_mul) println ("       - Mul/Div (unpipelined)")
     else if (has_mul && use_slow_mul) println ("       - Mul (unpipelined)")
     else if (has_div) println ("       - Div")
     if (has_fdiv) println ("       - FDiv/FSqrt")
 
-    val muldiv_busy = Wire(init=Bool(false))
-    val fdiv_busy = Wire(init=Bool(false))
+    val muldiv_busy = Bool(false)
+    val fdiv_busy = Bool(false)
+
 
     // The Functional Units --------------------
     val fu_units = ArrayBuffer[FunctionalUnit]()
 
     io.fu_types := FU_ALU |
-      Mux(Bool(has_fpu), FU_FPU, Bits(0)) |
-      Mux(Bool(has_mul && !use_slow_mul), FU_MUL, Bits(0)) |
-      (Mux(!muldiv_busy && Bool(has_mul && use_slow_mul), FU_MUL, Bits(0))) |
-      (Mux(!muldiv_busy && Bool(has_div), FU_DIV, Bits(0))) |
-      (Mux(Bool(shares_csr_wport), FU_CSR, Bits(0))) |
-      (Mux(Bool(is_branch_unit), FU_BRU, Bits(0))) |
-      Mux(!fdiv_busy && Bool(has_fdiv), FU_FDV, Bits(0))
+      Mux(Bool(has_fpu), FU_FPU, U(0)) |
+      Mux(Bool(has_mul && !use_slow_mul), FU_MUL, U(0)) |
+      (Mux(!muldiv_busy && Bool(has_mul && use_slow_mul), FU_MUL, U(0))) |
+      (Mux(!muldiv_busy && Bool(has_div), FU_DIV, U(0))) |
+      (Mux(Bool(shares_csr_wport), FU_CSR, U(0))) |
+      (Mux(Bool(is_branch_unit), FU_BRU, U(0))) |
+      Mux(!fdiv_busy && Bool(has_fdiv), FU_FDV, U(0))
 
 
     // ALU Unit -------------------------------
-    val alu = Module(new ALUUnit(is_branch_unit = is_branch_unit, num_stages = num_bypass_stages))
+    val alu = (new ALUUnit(is_branch_unit = is_branch_unit, num_stages = num_bypass_stages))
     alu.io.req.valid         := io.req.valid &&
-      (io.req.bits.uop.fu_code === FU_ALU ||
-        io.req.bits.uop.fu_code === FU_BRU ||
-        io.req.bits.uop.fu_code === FU_CSR)
-    alu.io.req.bits.uop      := io.req.bits.uop
-    alu.io.req.bits.kill     := io.req.bits.kill
-    alu.io.req.bits.rs1_data := io.req.bits.rs1_data
-    alu.io.req.bits.rs2_data := io.req.bits.rs2_data
+      (io.req.payload.uop.fu_code.asBits.asUInt === FU_ALU ||
+        io.req.payload.uop.fu_code.asBits.asUInt === FU_BRU ||
+        io.req.payload.uop.fu_code.asBits.asUInt === FU_CSR)
+    alu.io.req.payload.uop      := io.req.payload.uop
+    alu.io.req.payload.kill     := io.req.payload.kill
+    alu.io.req.payload.rs1_data := io.req.payload.rs1_data
+    alu.io.req.payload.rs2_data := io.req.payload.rs2_data
     alu.io.brinfo <> io.brinfo
 
     // branch unit is embedded inside the ALU
@@ -192,7 +196,7 @@ import scala.language.postfixOps
     var imul: PipelinedMulUnit = null
     if (has_mul && !use_slow_mul)
     {
-      imul = Module(new PipelinedMulUnit(IMUL_STAGES))
+      imul = (new PipelinedMulUnit(p.IMUL_STAGES))
       imul.io.req.valid         := io.req.valid && io.req.bits.uop.fu_code_is(FU_MUL)
       imul.io.req.bits.uop      := io.req.bits.uop
       imul.io.req.bits.rs1_data := io.req.bits.rs1_data

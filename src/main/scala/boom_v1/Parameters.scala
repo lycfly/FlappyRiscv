@@ -1,5 +1,6 @@
 package boom_v1
 
+import boom_v1.exec.FPU.FPUParams
 import boom_v1.predictor.gshare.{GShareBrPredictor, GShareParameters, SimpleGShareBrPredictor, SimpleGShareParameters}
 import boom_v1.predictor.gskew.{GSkewBrPredictor, GSkewParameters}
 import boom_v1.predictor.tage.{TageBrPredictor, TageParameters}
@@ -203,6 +204,21 @@ case class Parameters(
     GLOBAL_HISTORY_LENGTH = 1
   }
   VLHR_LENGTH = GLOBAL_HISTORY_LENGTH + 2 * NUM_ROB_ENTRIES
+
+  //************************************
+  // Functional Units
+  val usingFDivSqrt = FPUParams().divSqrt
+
+  val mulDivParams = rocketParams.mulDiv.getOrElse(MulDivParams())
+
+  //************************************
+  // Pipelining
+
+  val IMUL_STAGES = dfmaLatency
+  val dfmaLatency = FPUParams().dfmaLatency
+  val sfmaLatency = FPUParams().sfmaLatency
+  // All FPU ops padded out to same delay for writeport scheduling.
+  require(sfmaLatency == dfmaLatency)
 
 }
 

@@ -1,7 +1,14 @@
 package boom_v1.exec
 
+import boom_v1.BranchType._
+import boom_v1.RS1Type._
+import boom_v1.RS2Type._
+import boom_v1.ScalarOpConstants._
+import boom_v1.Utils.{GetNewBrMask, ImmGen, IsKilledByBranch, MuxLookup, Sext, maskMatch}
+import boom_v1.commit.{Exception, RobPCRequest}
+import boom_v1.exec.FPU.FPConstants
 import boom_v1.predictor.boom.BpdUpdate
-import boom_v1.{Causes, MaskedDC, MicroOp, Parameters}
+import boom_v1.{Causes, MStatus, MaskedDC, MicroOp, Parameters}
 import boom_v1.predictor.{BHTUpdate, BTBUpdate, BranchPredictionResp}
 import spinal.sim._
 import spinal.core._
@@ -48,13 +55,13 @@ class FunctionalUnitIo(num_stages: Int
   val br_unit = new BranchUnitResp().asOutput
 
   // only used by the fpu unit
-  val fcsr_rm = in UInt(tile.FPConstants.RM_SZ bits)
+  val fcsr_rm = in UInt(FPConstants.RM_SZ bits)
 
   // only used by branch unit
   // TODO name this, so ROB can also instantiate it
   val get_rob_pc = new RobPCRequest().flip
   val get_pred = new GetPredictionInfo
-  val status = new rocket.MStatus().asInput
+  val status = new MStatus().asInput
 }
 
 class GetPredictionInfo(implicit p: Parameters) extends Bundle
@@ -171,18 +178,18 @@ abstract class PipelinedFunctionalUnit(val num_stages: Int,
 
   if (num_stages > 0)
   {
-    val r_valids = Reg(init = Vec.fill(num_stages) { Bool(false) })
-    val r_uops   = Reg(Vec(num_stages, new MicroOp()))
+    val r_valids = RegInit(init = Vec.fill(num_stages) { Bool(false) })
+    val r_uops   = Reg(Vec(new MicroOp(),num_stages))
 
     // handle incoming request
-    r_valids(0) := io.req.valid && !IsKilledByBranch(io.brinfo, io.req.bits.uop) && !io.req.bits.kill
-    r_uops(0)   := io.req.bits.uop
-    r_uops(0).br_mask := GetNewBrMask(io.brinfo, io.req.bits.uop)
+    r_valids(0) := io.req.valid && !IsKilledByBranch(io.brinfo, io.req.payload.uop) && !io.req.payload.kill
+    r_uops(0)   := io.req.payload.uop
+    r_uops(0).br_mask := GetNewBrMask(io.brinfo, io.req.payload.uop)
 
     // handle middle of the pipeline
     for (i <- 1 until num_stages)
     {
-      r_valids(i) := r_valids(i-1) && !IsKilledByBranch(io.brinfo, r_uops(i-1)) && !io.req.bits.kill
+      r_valids(i) := r_valids(i-1) && !IsKilledByBranch(io.brinfo, r_uops(i-1)) && !io.req.payload.kill
       r_uops(i)   := r_uops(i-1)
       r_uops(i).br_mask := GetNewBrMask(io.brinfo, r_uops(i-1))
 
@@ -195,13 +202,13 @@ abstract class PipelinedFunctionalUnit(val num_stages: Int,
     // handle outgoing (branch could still kill it)
     // consumer must also check for pipeline flushes (kills)
     io.resp.valid    := r_valids(num_stages-1) && !IsKilledByBranch(io.brinfo, r_uops(num_stages-1))
-    io.resp.bits.uop := r_uops(num_stages-1)
-    io.resp.bits.uop.br_mask := GetNewBrMask(io.brinfo, r_uops(num_stages-1))
+    io.resp.payload.uop := r_uops(num_stages-1)
+    io.resp.payload.uop.br_mask := GetNewBrMask(io.brinfo, r_uops(num_stages-1))
 
     // bypassing (TODO allow bypass vector to have a different size from num_stages)
     if (num_bypass_stages > 0 && earliest_bypass_stage == 0)
     {
-      io.bypass.uop(0) := io.req.bits.uop
+      io.bypass.uop(0) := io.req.payload.uop
 
       for (i <- 1 until num_bypass_stages)
       {
@@ -216,9 +223,9 @@ abstract class PipelinedFunctionalUnit(val num_stages: Int,
 
     // valid doesn't check kill signals, let consumer deal with it.
     // The LSU already handles it and this hurts critical path.
-    io.resp.valid    := io.req.valid && !IsKilledByBranch(io.brinfo, io.req.bits.uop)
-    io.resp.bits.uop := io.req.bits.uop
-    io.resp.bits.uop.br_mask := GetNewBrMask(io.brinfo, io.req.bits.uop)
+    io.resp.valid    := io.req.valid && !IsKilledByBranch(io.brinfo, io.req.payload.uop)
+    io.resp.payload.uop := io.req.payload.uop
+    io.resp.payload.uop.br_mask := GetNewBrMask(io.brinfo, io.req.payload.uop)
   }
 
 }
@@ -230,38 +237,38 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
     , data_width = 64  //xLen
     , is_branch_unit = is_branch_unit)(p)
 {
-  val uop = io.req.bits.uop
+  val uop = io.req.payload.uop
 
   // immediate generation
-  val imm_xprlen = ImmGen(uop.imm_packed, uop.ctrl.imm_sel)
+  val imm_xprlen = ImmGen(uop.imm_packed, uop.ctrl.imm_sel.asBits)
 
   // operand 1 select
   var op1_data: UInt = null
   if (is_branch_unit)
   {
-    op1_data = Mux(io.req.bits.uop.ctrl.op1_sel.toUInt === OP1_RS1 , io.req.bits.rs1_data,
-      Mux(io.req.bits.uop.ctrl.op1_sel.toUInt === OP1_PC  , Sext(io.get_rob_pc.curr_pc, xLen),
-        UInt(0)))
+    op1_data = Mux(io.req.payload.uop.ctrl.op1_sel === OP1_RS1 , io.req.payload.rs1_data,
+      Mux(io.req.payload.uop.ctrl.op1_sel === OP1_PC  , Sext(io.get_rob_pc.curr_pc, p.xLen),
+        U(0)))
   }
   else
   {
-    op1_data = Mux(io.req.bits.uop.ctrl.op1_sel.toUInt === OP1_RS1 , io.req.bits.rs1_data,
-      UInt(0))
+    op1_data = Mux(io.req.payload.uop.ctrl.op1_sel === OP1_RS1 , io.req.payload.rs1_data,
+      U(0))
   }
 
   // operand 2 select
-  val op2_data = Mux(io.req.bits.uop.ctrl.op2_sel === OP2_IMM,  Sext(imm_xprlen.toUInt, xLen),
-    Mux(io.req.bits.uop.ctrl.op2_sel === OP2_IMMC, io.req.bits.uop.pop1(4,0),
-      Mux(io.req.bits.uop.ctrl.op2_sel === OP2_RS2 , io.req.bits.rs2_data,
-        Mux(io.req.bits.uop.ctrl.op2_sel === OP2_FOUR, UInt(4),
-          UInt(0)))))
+  val op2_data = Mux(io.req.payload.uop.ctrl.op2_sel === OP2_IMM,  Sext(imm_xprlen.asUInt, p.xLen),
+    Mux(io.req.payload.uop.ctrl.op2_sel === OP2_IMMC, io.req.payload.uop.pop1(4 downto 0),
+      Mux(io.req.payload.uop.ctrl.op2_sel === OP2_RS2 , io.req.payload.rs2_data,
+        Mux(io.req.payload.uop.ctrl.op2_sel === OP2_FOUR, U(4),
+          U(0)))))
 
-  val alu = Module(new rocket.ALU())
+  val alu = (new ALU())
 
-  alu.io.in1 := op1_data.toUInt
-  alu.io.in2 := op2_data.toUInt
-  alu.io.fn  := io.req.bits.uop.ctrl.op_fcn
-  alu.io.dw  := io.req.bits.uop.ctrl.fcn_dw
+  alu.io.in1 := op1_data
+  alu.io.in2 := op2_data
+  alu.io.fn  := io.req.payload.uop.ctrl.op_fcn
+  alu.io.dw  := io.req.payload.uop.ctrl.fcn_dw
 
 
   if (is_branch_unit)
@@ -273,27 +280,28 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
 
     // Did I just get killed by the previous cycle's branch,
     // or by a flush pipeline?
-    val killed = Wire(init=Bool(false))
-    when (io.req.bits.kill ||
+    val killed = Bool(false)
+    when (io.req.payload.kill ||
       (io.brinfo.valid &&
         io.brinfo.mispredict &&
-        maskMatch(io.brinfo.mask, io.req.bits.uop.br_mask)
+        maskMatch(io.brinfo.mask, io.req.payload.uop.br_mask)
         ))
     {
       killed := Bool(true)
     }
 
-    val rs1 = io.req.bits.rs1_data
-    val rs2 = io.req.bits.rs2_data
+    val rs1 = io.req.payload.rs1_data
+    val rs2 = io.req.payload.rs2_data
     val br_eq  = (rs1 === rs2)
-    val br_ltu = (rs1.toUInt < rs2.toUInt)
-    val br_lt  = (~(rs1(xLen-1) ^ rs2(xLen-1)) & br_ltu |
-      rs1(xLen-1) & ~rs2(xLen-1)).toBool
+    val br_ltu = (rs1 < rs2)
+    val br_lt  = (~(rs1(p.xLen-1) ^ rs2(p.xLen-1)) & br_ltu |
+      rs1(p.xLen-1) & ~rs2(p.xLen-1))
 
-    val pc_plus4 = (uop_pc_ + UInt(4))(vaddrBits,0)
+    val pc_plus4 = (uop_pc_ + U(4))(p.vaddrBits downto 0)
 
-    val pc_sel = MuxLookup(io.req.bits.uop.ctrl.br_type, PC_PLUS4,
-      Seq  (   BR_N  -> PC_PLUS4,
+    val pc_sel = MuxLookup(io.req.payload.uop.ctrl.br_type, PC_PLUS4,
+      Seq  (
+        BR_N  -> PC_PLUS4,
         BR_NE -> Mux(!br_eq,  PC_BRJMP, PC_PLUS4),
         BR_EQ -> Mux( br_eq,  PC_BRJMP, PC_PLUS4),
         BR_GE -> Mux(!br_lt,  PC_BRJMP, PC_PLUS4),
@@ -304,7 +312,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
         BR_JR -> PC_JALR
       ))
 
-    val bj_addr = Wire(UInt())
+    val bj_addr = UInt()
 
     val is_taken = io.req.valid &&
       !killed &&
@@ -312,17 +320,17 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
       (pc_sel =/= PC_PLUS4)
 
     // "mispredict" means that a branch has been resolved and it must be killed
-    val mispredict = Wire(Bool()); mispredict := Bool(false)
+    val mispredict = (Bool()); mispredict := Bool(false)
 
     val is_br          = io.req.valid && !killed && uop.is_br_or_jmp && !uop.is_jump
     val is_br_or_jalr  = io.req.valid && !killed && uop.is_br_or_jmp && !uop.is_jal
 
     // did the BTB predict a br or jmp incorrectly?
     // (do we need to reset its history and teach it a new target?)
-    val btb_mispredict = Wire(Bool()); btb_mispredict := Bool(false)
+    val btb_mispredict = (Bool()); btb_mispredict := Bool(false)
 
     // did the bpd predict incorrectly (aka, should we correct its prediction?)
-    val bpd_mispredict = Wire(Bool()); bpd_mispredict := Bool(false)
+    val bpd_mispredict = (Bool()); bpd_mispredict := Bool(false)
 
     // if b/j is taken, does it go to the wrong target?
     val wrong_taken_target = !io.get_rob_pc.next_val || (io.get_rob_pc.next_pc =/= bj_addr)
@@ -383,8 +391,8 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
 
 
     val br_unit =
-      if (enableBrResolutionRegister) Reg(new BranchUnitResp)
-      else Wire(new BranchUnitResp)
+      if (p.enableBrResolutionRegister) Reg(new BranchUnitResp)
+      else (new BranchUnitResp)
 
 
 
@@ -395,13 +403,13 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
     // If the rest of "br_unit" is being registered too, then we don't need to
     // register "brinfo" here, since in that case we would be double counting.
     val brinfo =
-    if (enableBrResolutionRegister) Wire(new BrResolutionInfo)
+    if (p.enableBrResolutionRegister) (new BrResolutionInfo)
     else Reg(new BrResolutionInfo)
 
     // note: jal doesn't allocate a branch-mask, so don't clear a br-mask bit
     brinfo.valid          := io.req.valid && uop.is_br_or_jmp && !uop.is_jal && !killed
     brinfo.mispredict     := mispredict
-    brinfo.mask           := UInt(1) << uop.br_tag
+    brinfo.mask           := U(1) << uop.br_tag
     brinfo.exe_mask       := GetNewBrMask(io.brinfo, uop.br_mask)
     brinfo.tag            := uop.br_tag
     brinfo.rob_idx        := uop.rob_idx

@@ -1,5 +1,7 @@
 package boom_v1.Utils
+import boom_v1.IMMType._
 import boom_v1.MicroOp
+import boom_v1.RISCVConstants._
 import boom_v1.exec.BrResolutionInfo
 import spinal.sim._
 import spinal.core._
@@ -7,7 +9,53 @@ import spinal.core.sim._
 import spinal.lib._
 
 import scala.math.log
+object MuxLookup {
 
+  /** Creates a cascade of n Muxs to search for a key value.
+    *
+    * @example {{{
+    * MuxLookup(idx, default, Seq(0.U -> a, 1.U -> b))
+    * }}}
+    *
+    * @param key a key to search for
+    * @param default a default value if nothing is found
+    * @param mapping a sequence to search of keys and values
+    * @return the value found or the default if not
+    */
+
+  def apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)]): T =
+    do_apply(key, default, mapping)
+
+  def do_applyEnum[S <: SpinalEnum, T <: Data](
+                                              key:     SpinalEnumCraft[S],
+                                              default: T,
+                                              mapping: Seq[(SpinalEnumElement[S], T)]
+                                            ): T =
+    do_apply[UInt, T](key.asBits.asUInt, default, mapping.map { case (s, t) => (s.asBits.asUInt, t) })
+
+  def do_apply[S <: UInt, T <: Data](key: S, default: T, mapping: Seq[(S, T)]): T = {
+    /* If the mapping is defined for all possible values of the key, then don't use the default value */
+//    val (defaultx, mappingx) = key.widthOption match {
+//      case Some(width) =>
+//        val keySetSize = BigInt(1) << width
+//        val keyMask = keySetSize - 1
+//        val distinctLitKeys = mapping.flatMap(_._1.litOption).map(_ & keyMask).distinct
+//        if (distinctLitKeys.size == keySetSize) {
+//          (mapping.head._2, mapping.tail)
+//        } else {
+//          (default, mapping)
+//        }
+//      case None => (default, mapping)
+//    }
+//
+//    mappingx.foldLeft(defaultx) { case (d, (k, v)) => Mux(k === key, v, d) }
+    var res = default
+    for ((t, v) <- mapping.reverse) {
+      res = Mux(t === key, v, res)
+    }
+    res
+  }
+}
 /** Given an association of values to enable signals, returns the first value with an associated
   * high enable signal.
   *
@@ -172,7 +220,7 @@ object Str
     require(s.forall(validChar _))
     for (c <- s)
       i = (i << 8) | c
-    U(i, s.length*8)
+    U(i, s.length*8 bits)
   }
   def apply(x: Char): UInt = {
     require(validChar(x))
@@ -220,3 +268,34 @@ object Str
   private def digit(d: UInt): UInt = Mux(d < U(10), Str('0')+d, Str(('a'-10).toChar)+d)(7 downto 0)
   private def validChar(x: Char) = x == (x & 0xFF)
 }
+
+object Sext
+{
+  def apply(x: UInt, length: Int): UInt =
+  {
+    return Cat(x(x.getWidth-1) #* (length-x.getWidth), x).asUInt
+  }
+}
+
+// translates from BOOM's special "packed immediate" to a 32b signed immediate
+// Asking for U-type gives it shifted up 12 bits.
+object ImmGen
+{
+  def apply(ip: UInt, isel: Bits): SInt =
+  {
+    val sign = ip(LONGEST_IMM_SZ-1).asUInt
+    val i30_20 = Mux(isel === IS_U.asBits, ip(18 downto 8), sign#*10)
+    val i19_12 = Mux(isel === IS_U.asBits || isel === IS_J.asBits, ip(7 downto 0), sign#*8)
+    val i11    = Mux(isel === IS_U.asBits, U(0, 1 bits),
+      Mux(isel === IS_J.asBits || isel === IS_B.asBits, ip(8).asUInt, sign))
+    val i10_5  = Mux(isel === IS_U.asBits, U(0,6 bits), ip(18 downto 14))
+    val i4_1   = Mux(isel === IS_U.asBits, U(0,4 bits), ip(13 downto 9))
+    val i0     = Mux(isel === IS_S.asBits || isel === IS_I.asBits, ip(8).asUInt, U(0, 1 bits))
+
+    return Cat(sign, i30_20, i19_12, i11, i10_5, i4_1, i0).asSInt
+  }
+}
+
+// store the rounding-mode and func type for FP in the packed immediate as well
+object ImmGenRm { def apply(ip: UInt): UInt = { return ip(2 downto 0) }}
+object ImmGenTyp { def apply(ip: UInt): UInt = { return ip(9 downto 8) }} // only works if !(IS_B or IS_S)
