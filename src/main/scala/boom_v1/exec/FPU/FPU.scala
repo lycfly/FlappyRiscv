@@ -147,7 +147,7 @@ class FPUDecoder(implicit p: Parameters) extends FPUModule()(p) {
   sigs zip decoder map {case(s,d) => s := d}
 }
 
-class FPUCoreIO(implicit p: Parameters) extends CoreBundle()(p) {
+class FPUCoreIO(implicit p: Parameters) extends Bundle {
   val inst = Bits(INPUT, 32)
   val fromint_data = Bits(INPUT, xLen)
 
@@ -265,7 +265,7 @@ trait HasFPUParameters {
   val maxSigWidth = floatWidths.map(_._2).max
 }
 
-abstract class FPUModule(implicit p: Parameters) extends CoreModule()(p) with HasFPUParameters
+abstract class FPUModule(implicit p: Parameters) extends Module with HasFPUParameters
 
 class FPToInt(implicit p: Parameters) extends FPUModule()(p) {
   class Output extends Bundle {

@@ -9,6 +9,12 @@ import spinal.core.sim._
 import spinal.lib._
 
 import scala.math.log
+
+object Fill{
+  def apply[T <: Data](x: Int, data: T): T = {
+    (data #* x).asInstanceOf[T]
+  }
+}
 object MuxLookup {
 
   /** Creates a cascade of n Muxs to search for a key value.
@@ -268,6 +274,7 @@ object Str
   private def digit(d: UInt): UInt = Mux(d < U(10), Str('0')+d, Str(('a'-10).toChar)+d)(7 downto 0)
   private def validChar(x: Char) = x == (x & 0xFF)
 }
+
 
 object Sext
 {

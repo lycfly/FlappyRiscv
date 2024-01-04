@@ -140,7 +140,7 @@ object CFIType {
 //  - "pc" is what future fetch PCs will tag match against.
 //  - "br_pc" is the PC of the branch instruction.
 class BTBUpdate(implicit p: Parameters) extends BtbBundle()(p) {
-  val prediction = new BTBResp
+  val prediction = Flow(new BTBResp)
   val pc = UInt(p.vaddrBits bits)
   val target = UInt(p.vaddrBits bits)
   val taken = Bool()
@@ -152,7 +152,7 @@ class BTBUpdate(implicit p: Parameters) extends BtbBundle()(p) {
 // BHT update occurs during branch resolution on all conditional branches.
 //  - "pc" is what future fetch PCs will tag match against.
 class BHTUpdate(implicit p: Parameters) extends BtbBundle()(p) {
-  val prediction = new BTBResp
+  val prediction = Flow(new BTBResp)
   val pc = UInt(p.vaddrBits bits)
   val branch = Bool()
   val taken = Bool()

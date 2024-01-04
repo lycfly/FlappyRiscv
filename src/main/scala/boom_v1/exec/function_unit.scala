@@ -3,13 +3,16 @@ package boom_v1.exec
 import boom_v1.BranchType._
 import boom_v1.RS1Type._
 import boom_v1.RS2Type._
+import boom_v1.MEMType._
 import boom_v1.ScalarOpConstants._
-import boom_v1.Utils.{GetNewBrMask, ImmGen, IsKilledByBranch, MuxLookup, Sext, maskMatch}
+import boom_v1.UOPs._
+import boom_v1.Utils.{Fill, GetNewBrMask, ImmGen, IsKilledByBranch, MuxLookup, Sext, maskMatch}
 import boom_v1.commit.{Exception, RobPCRequest}
 import boom_v1.exec.FPU.FPConstants
+import boom_v1.exec.FPU.hardfloat.fNFromRecFN
 import boom_v1.predictor.boom.BpdUpdate
 import boom_v1.{Causes, MStatus, MaskedDC, MicroOp, Parameters}
-import boom_v1.predictor.{BHTUpdate, BTBUpdate, BranchPredictionResp}
+import boom_v1.predictor.{BHTUpdate, BTBUpdate, BranchPredictionResp, CFIType}
 import spinal.sim._
 import spinal.core._
 import spinal.lib._
@@ -425,12 +428,12 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
     br_unit.brinfo := brinfo
 
     // updates the BTB same cycle as PC redirect
-    val lsb = log2Ceil(FETCH_WIDTH*coreInstBytes)
+    val lsb = log2Up(p.FETCH_WIDTH*p.coreInstBytes)
 
     // did a branch or jalr occur AND did we mispredict? AND was it taken? (i.e., should we update the BTB)
     val fetch_pc = ((uop_pc_ >> lsb) << lsb) + uop.fetch_pc_lob
 
-    if (enableBTBContainsBranches)
+    if (p.enableBTBContainsBranches)
     {
       br_unit.btb_update_valid := is_br_or_jalr && mispredict && is_taken
       // update on all branches (but not jal/jalr)
@@ -444,46 +447,46 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
 
     br_unit.btb_update.pc               := fetch_pc // tell the BTB which pc to tag check against
     br_unit.btb_update.br_pc            := uop_pc_
-    br_unit.btb_update.target           := (br_unit.target.toSInt & SInt(-coreInstBytes)).toUInt
+    br_unit.btb_update.target           := (br_unit.target.asSInt & S(-p.coreInstBytes, br_unit.target.getWidth bits)).asUInt
     br_unit.btb_update.prediction.valid := io.get_pred.info.btb_resp_valid // did this branch's fetch packet have
     // a BTB hit in fetch?
-    br_unit.btb_update.prediction.bits  := io.get_pred.info.btb_resp       // give the BTB back its BTBResp
+    br_unit.btb_update.prediction.payload  := io.get_pred.info.btb_resp       // give the BTB back its BTBResp
     br_unit.btb_update.taken            := is_taken   // was this branch/jal/jalr "taken"
-    br_unit.btb_update.isJump           := uop.is_jump
-    br_unit.btb_update.isReturn         := uop.is_ret
+    br_unit.btb_update.cfiType           := Mux(uop.is_jump , U(CFIType.jump) , Mux(uop.is_ret, U(CFIType.ret), U(CFIType.branch)))
+//    br_unit.btb_update.isReturn         := uop.is_ret
 
-    br_unit.bht_update.bits.taken            := is_taken   // was this branch "taken"
-    br_unit.bht_update.bits.mispredict       := btb_mispredict     // need to reset the history in the BHT
+    br_unit.bht_update.payload.taken            := is_taken   // was this branch "taken"
+    br_unit.bht_update.payload.mispredict       := btb_mispredict     // need to reset the history in the BHT
     // that is updated only on BTB hits
-    br_unit.bht_update.bits.prediction.valid := io.get_pred.info.btb_resp_valid // only update if hit in the BTB
-    br_unit.bht_update.bits.prediction.bits  := io.get_pred.info.btb_resp
-    br_unit.bht_update.bits.pc               := fetch_pc // what pc should the tag check be on?
+    br_unit.bht_update.payload.prediction.valid := io.get_pred.info.btb_resp_valid // only update if hit in the BTB
+    br_unit.bht_update.payload.prediction.payload  := io.get_pred.info.btb_resp
+    br_unit.bht_update.payload.pc               := fetch_pc // what pc should the tag check be on?
 
     br_unit.bpd_update.valid                 := io.req.valid && uop.is_br_or_jmp &&
       !uop.is_jal && !killed
-    br_unit.bpd_update.bits.is_br            := is_br
-    br_unit.bpd_update.bits.brob_idx         := io.get_rob_pc.curr_brob_idx
-    br_unit.bpd_update.bits.taken            := is_taken
-    br_unit.bpd_update.bits.mispredict       := mispredict
-    br_unit.bpd_update.bits.bpd_predict_val  := uop.br_prediction.bpd_predict_val
-    br_unit.bpd_update.bits.bpd_mispredict   := bpd_mispredict
-    br_unit.bpd_update.bits.pc               := fetch_pc
-    br_unit.bpd_update.bits.br_pc            := uop_pc_
-    br_unit.bpd_update.bits.history_ptr      := io.get_pred.info.bpd_resp.history_ptr
-    br_unit.bpd_update.bits.info             := io.get_pred.info.bpd_resp.info
-    if (!ENABLE_VLHR)
+    br_unit.bpd_update.payload.is_br            := is_br
+    br_unit.bpd_update.payload.brob_idx         := io.get_rob_pc.curr_brob_idx
+    br_unit.bpd_update.payload.taken            := is_taken
+    br_unit.bpd_update.payload.mispredict       := mispredict
+    br_unit.bpd_update.payload.bpd_predict_val  := uop.br_prediction.bpd_predict_val
+    br_unit.bpd_update.payload.bpd_mispredict   := bpd_mispredict
+    br_unit.bpd_update.payload.pc               := fetch_pc
+    br_unit.bpd_update.payload.br_pc            := uop_pc_
+    br_unit.bpd_update.payload.history_ptr      := io.get_pred.info.bpd_resp.history_ptr
+    br_unit.bpd_update.payload.info             := io.get_pred.info.bpd_resp.info
+    if (!p.ENABLE_VLHR)
     {
-      br_unit.bpd_update.bits.history.get := io.get_pred.info.bpd_resp.history.get
-      br_unit.bpd_update.bits.history_u.get := io.get_pred.info.bpd_resp.history_u.get
+      br_unit.bpd_update.payload.history.get := io.get_pred.info.bpd_resp.history.get
+      br_unit.bpd_update.payload.history_u.get := io.get_pred.info.bpd_resp.history_u.get
     }
 
     // is the br_pc the last instruction in the fetch bundle?
-    val is_last_inst = if (FETCH_WIDTH == 1) { Bool(true) }
-    else { ((uop_pc_ >> UInt(log2Up(coreInstBytes))) &
-      Fill(log2Up(FETCH_WIDTH), UInt(1))) === UInt(FETCH_WIDTH-1) }
-    br_unit.bpd_update.bits.new_pc_same_packet := !(is_taken) && !is_last_inst
+    val is_last_inst = if (p.FETCH_WIDTH == 1) { Bool(true) }
+    else { ((uop_pc_ >> UInt(log2Up(p.coreInstBytes) bits)) &
+      (U(1)#*log2Up(p.FETCH_WIDTH)).asUInt) === U(p.FETCH_WIDTH-1) }
+    br_unit.bpd_update.payload.new_pc_same_packet := !(is_taken) && !is_last_inst
 
-    require (coreInstBytes == 4)
+    require (p.coreInstBytes == 4)
 
 
     // Branch/Jump Target Calculation
@@ -492,18 +495,18 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
     def vaSign(a0: UInt, ea: UInt):Bool = {
       // efficient means to compress 64-bit VA into rc.as.vaddrBits+1 bits
       // (VA is bad if VA(rc.as.vaddrBits) =/= VA(rc.as.vaddrBits-1))
-      val a = a0 >> vaddrBits-1
-      val e = ea(vaddrBits,vaddrBits-1)
-      Mux(a === UInt(0) || a === UInt(1), e =/= UInt(0),
-        Mux(a.toSInt === SInt(-1) || a.toSInt === SInt(-2), e.toSInt === SInt(-1),
+      val a = a0 >> p.vaddrBits-1
+      val e = ea(p.vaddrBits downto p.vaddrBits-1)
+      Mux(a === U(0) || a === U(1), e =/= U(0),
+        Mux(a.asSInt === S(-1) || a.asSInt === S(-2), e.asSInt === S(-1),
           e(0)))
     }
 
-    val bj_base = Mux(uop.uopc === uopJALR, io.req.bits.rs1_data, uop_pc_)
-    val bj_offset = imm_xprlen(20,0).toSInt
-    val bj64 = (bj_base.toSInt + bj_offset).toUInt
-    val bj_msb = Mux(uop.uopc === uopJALR, vaSign(io.req.bits.rs1_data, bj64.toUInt), vaSign(uop_pc_, bj64.toUInt))
-    bj_addr := (Cat(bj_msb, bj64(vaddrBits-1,0)).toSInt & SInt(-2)).toUInt
+    val bj_base = Mux(uop.uopc === uopJALR, io.req.payload.rs1_data, uop_pc_)
+    val bj_offset = imm_xprlen(20 downto 0)
+    val bj64 = (bj_base.asSInt + bj_offset).asUInt
+    val bj_msb = Mux(uop.uopc === uopJALR, vaSign(io.req.payload.rs1_data, bj64), vaSign(uop_pc_, bj64))
+    bj_addr := (Cat(bj_msb, bj64(p.vaddrBits-1 downto 0)).asSInt & S(-2)).asUInt
 
     br_unit.pc             := uop_pc_
     br_unit.debug_btb_pred := io.get_pred.info.btb_resp_valid && io.get_pred.info.btb_resp.taken
@@ -511,10 +514,10 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
     // handle misaligned branch/jmp targets
     // TODO BUG only trip xcpt if taken to bj_addr
     br_unit.xcpt.valid     := bj_addr(1) && io.req.valid && mispredict && !killed
-    br_unit.xcpt.bits.uop  := uop
-    br_unit.xcpt.bits.cause:= UInt(rocket.Causes.misaligned_fetch)
+    br_unit.xcpt.payload.uop  := uop
+    br_unit.xcpt.payload.cause:= U(Causes.misaligned_fetch)
     // TODO is there a better way to get this information to the CSR file? maybe use brinfo.target?
-    br_unit.xcpt.bits.badvaddr:= bj_addr
+    br_unit.xcpt.payload.badvaddr:= bj_addr
 
     io.br_unit := br_unit
   }
@@ -526,8 +529,8 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
   //   reg_data := alu.io.out
   //   io.resp.bits.data := reg_data
 
-  val r_val  = Reg(init = Vec.fill(num_stages) { Bool(false) })
-  val r_data = Reg(Vec(num_stages, UInt(width=xLen)))
+  val r_val  = RegInit(init = Vec.fill(num_stages) { Bool(false) })
+  val r_data = Reg(Vec(UInt(width=p.xLen bits),num_stages))
   r_val (0) := io.req.valid
   r_data(0) := alu.io.out
   for (i <- 1 until num_stages)
@@ -535,7 +538,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
     r_val(i)  := r_val(i-1)
     r_data(i) := r_data(i-1)
   }
-  io.resp.bits.data := r_data(num_stages-1)
+  io.resp.payload.data := r_data(num_stages-1)
 
   // Bypass
   // for the ALU, we can bypass same cycle as compute
@@ -550,7 +553,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
   }
 
   // Exceptions
-  io.resp.bits.fflags.valid := Bool(false)
+  io.resp.payload.fflags.valid := Bool(false)
 }
 
 
@@ -563,43 +566,43 @@ class MemAddrCalcUnit(implicit p: Parameters) extends PipelinedFunctionalUnit(nu
   , is_branch_unit = false)(p)
 {
   // perform address calculation
-  val sum = (io.req.bits.rs1_data.toSInt + io.req.bits.uop.imm_packed(19,8).toSInt).toUInt
-  val ea_sign = Mux(sum(vaddrBits-1), ~sum(63,vaddrBits) === UInt(0),
-    sum(63,vaddrBits) =/= UInt(0))
-  val effective_address = Cat(ea_sign, sum(vaddrBits-1,0)).toUInt
+  val sum = (io.req.payload.rs1_data.asSInt + io.req.payload.uop.imm_packed(19 downto 8).asSInt).asUInt
+  val ea_sign = Mux(sum(p.vaddrBits-1), ~sum(63 downto p.vaddrBits) === U(0),
+    sum(63 downto p.vaddrBits) =/= U(0))
+  val effective_address = Cat(ea_sign, sum(p.vaddrBits-1 downto 0)).asUInt
 
   // compute store data
   // requires decoding 65-bit FP data
-  val unrec_s = hardfloat.fNFromRecFN(8, 24, io.req.bits.rs2_data)
-  val unrec_d = hardfloat.fNFromRecFN(11, 53, io.req.bits.rs2_data)
-  val unrec_out = Mux(io.req.bits.uop.fp_single, Cat(Fill(32, unrec_s(31)), unrec_s), unrec_d)
+  val unrec_s = fNFromRecFN(8, 24, io.req.payload.rs2_data.asBits)
+  val unrec_d = fNFromRecFN(11, 53, io.req.payload.rs2_data.asBits)
+  val unrec_out = Mux(io.req.payload.uop.fp_single, Cat(Fill(32, unrec_s(31)), unrec_s).asUInt, unrec_d)
 
   var store_data:UInt = null
-  if (!usingFPU) store_data = io.req.bits.rs2_data
-  else store_data = Mux(io.req.bits.uop.fp_val, unrec_out, io.req.bits.rs2_data)
+  if (!p.usingFPU) store_data = io.req.payload.rs2_data
+  else store_data = Mux(io.req.payload.uop.fp_val, unrec_out, io.req.payload.rs2_data)
 
-  io.resp.bits.addr := effective_address
-  io.resp.bits.data := store_data
+  io.resp.payload.addr := effective_address
+  io.resp.payload.data := store_data
 
   if (data_width > 63)
   {
-    assert (!(io.req.valid && io.req.bits.uop.ctrl.is_std &&
-      io.resp.bits.data(64).toBool === Bool(true)), "65th bit set in MemAddrCalcUnit.")
+    assert (!(io.req.valid && io.req.payload.uop.ctrl.is_std &&
+      io.resp.payload.data(64) === Bool(true)), "65th bit set in MemAddrCalcUnit.")
   }
 
   // Handle misaligned exceptions
-  val typ = io.req.bits.uop.mem_typ
+  val typ = io.req.payload.uop.mem_typ
   val misaligned =
-    (((typ === rocket.MT_H) || (typ === rocket.MT_HU)) && (effective_address(0) =/= UInt(0))) ||
-      (((typ === rocket.MT_W) || (typ === rocket.MT_WU)) && (effective_address(1,0) =/= UInt(0))) ||
-      ((typ ===  rocket.MT_D) && (effective_address(2,0) =/= UInt(0)))
+    (((typ === MT_H.asBits.asUInt) || (typ === MT_HU.asBits.asUInt)) && (effective_address(0) =/= U(0))) ||
+      (((typ === MT_W.asBits.asUInt) || (typ === MT_WU.asBits.asUInt)) && (effective_address(1 downto 0) =/= U(0))) ||
+      ((typ ===  MT_D.asBits.asUInt) && (effective_address(2 downto 0) =/= U(0)))
 
-  val ma_ld = io.req.valid && io.req.bits.uop.uopc === uopLD && misaligned
-  val ma_st = io.req.valid && (io.req.bits.uop.uopc === uopSTA || io.req.bits.uop.uopc === uopAMO_AG) && misaligned
+  val ma_ld = io.req.valid && io.req.payload.uop.uopc === uopLD && misaligned
+  val ma_st = io.req.valid && (io.req.payload.uop.uopc === uopSTA || io.req.payload.uop.uopc === uopAMO_AG) && misaligned
 
-  io.resp.bits.mxcpt.valid := ma_ld || ma_st
-  io.resp.bits.mxcpt.bits  := Mux(ma_ld, UInt(rocket.Causes.misaligned_load),
-    UInt(rocket.Causes.misaligned_store))
+  io.resp.payload.mxcpt.valid := ma_ld || ma_st
+  io.resp.payload.mxcpt.payload  := Mux(ma_ld, U(Causes.misaligned_load),
+    U(Causes.misaligned_store))
   assert (!(ma_ld && ma_st), "Mutually-exclusive exceptions are firing.")
 }
 
@@ -613,7 +616,7 @@ class FPUUnit(implicit p: Parameters) extends PipelinedFunctionalUnit(num_stages
   , earliest_bypass_stage = 0
   , data_width = 65)(p)
 {
-  val fpu = Module(new FPU())
+  val fpu = (new FPU())
   fpu.io.req <> io.req
   fpu.io.req.bits.fcsr_rm := io.fcsr_rm
 
@@ -636,38 +639,38 @@ abstract class UnPipelinedFunctionalUnit(implicit p: Parameters)
 {
   val r_uop = Reg(new MicroOp())
 
-  val do_kill = Wire(Bool())
-  do_kill := io.req.bits.kill // irrelevant default
+  val do_kill = (Bool())
+  do_kill := io.req.payload.kill // irrelevant default
 
-  when (io.req.fire())
+  when (io.req.fire)
   {
     // update incoming uop
-    do_kill := IsKilledByBranch(io.brinfo, io.req.bits.uop) || io.req.bits.kill
-    r_uop := io.req.bits.uop
-    r_uop.br_mask := GetNewBrMask(io.brinfo, io.req.bits.uop)
+    do_kill := IsKilledByBranch(io.brinfo, io.req.payload.uop) || io.req.payload.kill
+    r_uop := io.req.payload.uop
+    r_uop.br_mask := GetNewBrMask(io.brinfo, io.req.payload.uop)
   }
     .otherwise
     {
-      do_kill := IsKilledByBranch(io.brinfo, r_uop) || io.req.bits.kill
+      do_kill := IsKilledByBranch(io.brinfo, r_uop) || io.req.payload.kill
       r_uop.br_mask := GetNewBrMask(io.brinfo, r_uop)
     }
 
 
   // assumes at least one pipeline register between request and response
-  io.resp.bits.uop := r_uop
+  io.resp.payload.uop := r_uop
 }
 
 
 class MulDivUnit(implicit p: Parameters) extends UnPipelinedFunctionalUnit()(p)
 {
-  val muldiv = Module(new rocket.MulDiv(mulDivParams, width = xLen))
+  val muldiv = (new MulDiv(p.mulDivParams, width = p.xLen))
 
   // request
   muldiv.io.req.valid    := io.req.valid && !this.do_kill
-  muldiv.io.req.bits.dw  := io.req.bits.uop.ctrl.fcn_dw
-  muldiv.io.req.bits.fn  := io.req.bits.uop.ctrl.op_fcn
-  muldiv.io.req.bits.in1 := io.req.bits.rs1_data
-  muldiv.io.req.bits.in2 := io.req.bits.rs2_data
+  muldiv.io.req.bits.dw  := io.req.payload.uop.ctrl.fcn_dw
+  muldiv.io.req.bits.fn  := io.req.payload.uop.ctrl.op_fcn
+  muldiv.io.req.bits.in1 := io.req.payload.rs1_data
+  muldiv.io.req.bits.in2 := io.req.payload.rs2_data
   io.req.ready           := muldiv.io.req.ready
 
   // handle pipeline kills and branch misspeculations
@@ -676,7 +679,7 @@ class MulDivUnit(implicit p: Parameters) extends UnPipelinedFunctionalUnit()(p)
   // response
   io.resp.valid          := muldiv.io.resp.valid
   muldiv.io.resp.ready   := io.resp.ready
-  io.resp.bits.data      := muldiv.io.resp.bits.data
+  io.resp.payload.data      := muldiv.io.resp.bits.data
 }
 
 class PipelinedMulUnit(num_stages: Int)(implicit p: Parameters)
@@ -685,16 +688,16 @@ class PipelinedMulUnit(num_stages: Int)(implicit p: Parameters)
     , earliest_bypass_stage = 0
     , data_width = 64)(p)
 {
-  val imul = Module(new IMul(num_stages))
+  val imul = (new IMul(num_stages))
   // request
   imul.io.valid := io.req.valid
-  imul.io.in0   := io.req.bits.rs1_data
-  imul.io.in1   := io.req.bits.rs2_data
-  imul.io.dw    := io.req.bits.uop.ctrl.fcn_dw
-  imul.io.fn    := io.req.bits.uop.ctrl.op_fcn
+  imul.io.in0   := io.req.payload.rs1_data
+  imul.io.in1   := io.req.payload.rs2_data
+  imul.io.dw    := io.req.payload.uop.ctrl.fcn_dw
+  imul.io.fn    := io.req.payload.uop.ctrl.op_fcn
 
   // response
-  io.resp.bits.data      := imul.io.out
+  io.resp.payload.data      := imul.io.out
 }
 
 }
