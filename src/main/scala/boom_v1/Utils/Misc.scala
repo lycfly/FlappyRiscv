@@ -10,9 +10,10 @@ import spinal.lib._
 
 import scala.math.log
 
+
 object Fill{
-  def apply[T <: Data](x: Int, data: T): T = {
-    (data #* x).asInstanceOf[T]
+  def apply[T <: Data](x: Int, data: T): Bits = {
+    (data #* x)
   }
 }
 object MuxLookup {
