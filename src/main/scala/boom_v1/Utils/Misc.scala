@@ -10,6 +10,10 @@ import spinal.lib._
 
 import scala.math.log
 
+object countLeadingZeros
+{
+  def apply(in: UInt): UInt = PriorityEncoder(in.asBools.reverse)
+}
 
 object Fill{
   def apply[T <: Data](x: Int, data: T): Bits = {

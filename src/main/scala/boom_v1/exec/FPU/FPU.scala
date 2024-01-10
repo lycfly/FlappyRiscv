@@ -353,16 +353,16 @@ class FPToInt(implicit p: Parameters) extends FPUModule()(p) {
 
 class IntToFP(val latency: Int)(implicit p: Parameters) extends FPUModule()(p) {
   val io = new Bundle {
-    val in = Valid(new FPInput).flip
-    val out = Valid(new FPResult)
+    val in = slave(Valid(new FPInput))
+    val out = master(Valid(new FPResult))
   }
 
-  val in = Pipe(io.in)
+  val in = RegFlow(io.in)
 
-  val mux = Wire(new FPResult)
+  val mux = (new FPResult)
   mux.exc := Bits(0)
-  mux.data := hardfloat.recFNFromFN(sExpWidth, sSigWidth, in.bits.in1)
-  if (fLen > 32) when (!in.bits.single) {
+  mux.data := hardfloat.recFNFromFN(sExpWidth, sSigWidth, in.payload.in1)
+  if (fLen > 32) when (!in.payload.single) {
     mux.data := hardfloat.recFNFromFN(dExpWidth, dSigWidth, in.bits.in1)
   }
 
