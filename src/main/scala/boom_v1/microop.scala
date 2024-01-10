@@ -1,7 +1,7 @@
 package boom_v1
 
 import EasonLib.Utils.Enum.EasonEnum
-import boom_v1.exec.ALUFN
+import boom_v1.exec._
 import boom_v1.predictor.BranchPrediction
 import spinal.sim._
 import spinal.core._

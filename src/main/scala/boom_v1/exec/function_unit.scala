@@ -8,7 +8,7 @@ import boom_v1.ScalarOpConstants._
 import boom_v1.UOPs._
 import boom_v1.Utils.{Fill, GetNewBrMask, ImmGen, IsKilledByBranch, MuxLookup, Sext, maskMatch}
 import boom_v1.commit.{Exception, RobPCRequest}
-import boom_v1.exec.FPU.FPConstants
+import boom_v1.exec.FPU.{FPConstants, FPU}
 import boom_v1.exec.FPU.hardfloat.fNFromRecFN
 import boom_v1.predictor.boom.BpdUpdate
 import boom_v1.{Causes, MStatus, MaskedDC, MicroOp, Parameters}

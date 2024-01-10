@@ -6,6 +6,9 @@ import boom_v1.exec.FPU.FPConstants._
 import boom_v1.{BitMap, Parameters}
 import spinal.core._
 import spinal.lib._
+import boom_v1.Utils._
+import boom_v1.Utils.chiselExtract._
+
 // See LICENSE.Berkeley for license details.
 // See LICENSE.SiFive for license details.
 
@@ -149,18 +152,18 @@ class FPUDecoder(implicit p: Parameters) extends FPUModule()(p) {
 
 class FPUCoreIO(implicit p: Parameters) extends Bundle {
   val inst = Bits(INPUT, 32)
-  val fromint_data = Bits(INPUT, xLen)
+  val fromint_data = Bits(INPUT, p.xLen)
 
   val fcsr_rm = Bits(INPUT, FPConstants.RM_SZ)
   val fcsr_flags = Valid(Bits(width = FPConstants.FLAGS_SZ))
 
-  val store_data = Bits(OUTPUT, fLen)
-  val toint_data = Bits(OUTPUT, xLen)
+  val store_data = Bits(OUTPUT, p.fLen)
+  val toint_data = Bits(OUTPUT, p.xLen)
 
   val dmem_resp_val = Bool(INPUT)
   val dmem_resp_type = Bits(INPUT, 3)
   val dmem_resp_tag = UInt(INPUT, 5)
-  val dmem_resp_data = Bits(INPUT, fLen)
+  val dmem_resp_data = Bits(INPUT, p.fLen)
 
   val valid = Bool(INPUT)
   val fcsr_rdy = Bool(OUTPUT)
@@ -175,36 +178,36 @@ class FPUCoreIO(implicit p: Parameters) extends Bundle {
 }
 
 class FPUIO(implicit p: Parameters) extends FPUCoreIO ()(p) {
-  val cp_req = Decoupled(new FPInput()).flip //cp doesn't pay attn to kill sigs
-  val cp_resp = Decoupled(new FPResult())
+  val cp_req = Stream(new FPInput()).flip //cp doesn't pay
+  // attn to kill sigs
+  val cp_resp = Stream(new FPResult())
 }
 
-class FPResult(implicit p: Parameters) extends CoreBundle()(p) {
-  val data = Bits(width = fLen+1)
+class FPResult(implicit p: Parameters) extends Bundle {
+  val data = Bits(width = p.fLen+1)
   val exc = Bits(width = 5)
 }
 
-class FPInput(implicit p: Parameters) extends CoreBundle()(p) with HasFPUCtrlSigs {
+class FPInput(implicit p: Parameters) extends Bundle with HasFPUCtrlSigs {
   val rm = Bits(width = 3)
   val typ = Bits(width = 2)
-  val in1 = Bits(width = fLen+1)
-  val in2 = Bits(width = fLen+1)
-  val in3 = Bits(width = fLen+1)
+  val in1 = Bits(width = p.fLen+1)
+  val in2 = Bits(width = p.fLen+1)
+  val in3 = Bits(width = p.fLen+1)
 
-  override def cloneType = new FPInput().asInstanceOf[this.type]
 }
 
 object ClassifyRecFN {
   def apply(expWidth: Int, sigWidth: Int, in: UInt) = {
     val sign = in(sigWidth + expWidth)
-    val exp = in(sigWidth + expWidth - 1, sigWidth - 1)
-    val sig = in(sigWidth - 2, 0)
+    val exp = in(sigWidth + expWidth - 1 downto  sigWidth - 1)
+    val sig = in.slice(sigWidth - 2, 0)
 
-    val code        = exp(expWidth,expWidth-2)
-    val codeHi      = code(2, 1)
+    val code        = exp.slice(expWidth,expWidth-2)
+    val codeHi      = code.slice(2, 1)
     val isSpecial   = codeHi === UInt(3)
 
-    val isHighSubnormalIn = exp(expWidth-2, 0) < UInt(2)
+    val isHighSubnormalIn = exp.slice(expWidth-2, 0) < UInt(2)
     val isSubnormal = code === UInt(1) || codeHi === UInt(1) && isHighSubnormalIn
     val isNormal = codeHi === UInt(1) && !isHighSubnormalIn || codeHi === UInt(2)
     val isZero = code === UInt(0)
@@ -221,7 +224,7 @@ object ClassifyRecFN {
 
 object IsNaNRecFN {
   def apply(expWidth: Int, sigWidth: Int, in: UInt) =
-    in(sigWidth + expWidth - 1, sigWidth + expWidth - 3).andR
+    in.slice(sigWidth + expWidth - 1, sigWidth + expWidth - 3).andR
 }
 
 object IsSNaNRecFN {
@@ -233,11 +236,11 @@ object IsSNaNRecFN {
 object RecFNToRecFN_noncompliant {
   def apply(in: UInt, inExpWidth: Int, inSigWidth: Int, outExpWidth: Int, outSigWidth: Int) = {
     val sign = in(inSigWidth + inExpWidth)
-    val fractIn = in(inSigWidth - 2, 0)
-    val expIn = in(inSigWidth + inExpWidth - 1, inSigWidth - 1)
+    val fractIn = in.slice(inSigWidth - 2, 0)
+    val expIn = in.slice(inSigWidth + inExpWidth - 1, inSigWidth - 1)
     val fractOut = fractIn << outSigWidth >> inSigWidth
     val expOut = {
-      val expCode = expIn(inExpWidth, inExpWidth - 2)
+      val expCode = expIn.slice(inExpWidth, inExpWidth - 2)
       val commonCase = (expIn + (1 << outExpWidth)) - (1 << inExpWidth)
       Mux(expCode === 0 || expCode >= 6, Cat(expCode, commonCase(outExpWidth - 3, 0)),
         commonCase(outExpWidth, 0))
@@ -469,26 +472,26 @@ class FPToFP(val latency: Int)(implicit p: Parameters) extends FPUModule()(p) {
 
 class FPUFMAPipe(val latency: Int, expWidth: Int, sigWidth: Int)(implicit p: Parameters) extends FPUModule()(p) {
   val io = new Bundle {
-    val in = Valid(new FPInput).flip
-    val out = Valid(new FPResult)
+    val in = slave(Valid(new FPInput))
+    val out = master(Valid(new FPResult))
   }
 
   val width = sigWidth + expWidth
   val one = UInt(1) << (width-1)
-  val zero = (io.in.bits.in1(width) ^ io.in.bits.in2(width)) << width
+  val zero = (io.in.payload.in1(width) ^ io.in.payload.in2(width)).asUInt << width
 
-  val valid = Reg(next=io.in.valid)
+  val valid = RegNext(io.in.valid)
   val in = Reg(new FPInput)
   when (io.in.valid) {
-    in := io.in.bits
-    val cmd_fma = io.in.bits.ren3
-    val cmd_addsub = io.in.bits.swap23
-    in.cmd := Cat(io.in.bits.cmd(1) & (cmd_fma || cmd_addsub), io.in.bits.cmd(0))
+    in := io.in.payload
+    val cmd_fma = io.in.payload.ren3
+    val cmd_addsub = io.in.payload.swap23
+    in.cmd := Cat(io.in.payload.cmd(1) & (cmd_fma || cmd_addsub), io.in.payload.cmd(0))
     when (cmd_addsub) { in.in2 := one }
     unless (cmd_fma || cmd_addsub) { in.in3 := zero }
   }
 
-  val fma = Module(new hardfloat.MulAddRecFN(expWidth, sigWidth))
+  val fma = (new hardfloat.MulAddRecFN(expWidth, sigWidth))
   fma.io.op := in.cmd
   fma.io.roundingMode := in.rm
   fma.io.a := in.in1

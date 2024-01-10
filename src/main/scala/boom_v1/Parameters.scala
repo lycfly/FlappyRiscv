@@ -51,6 +51,8 @@ case class Parameters(
                        random_bpd: Boolean = false,
                      ) {
   val xLen = 32
+  val fLen = xLen // TODO relax this
+
   val PRV_SZ = 2
   val FETCH_WIDTH = fetchWidth // number of insts we can fetch
   val DECODE_WIDTH = decodeWidth

@@ -4,6 +4,8 @@ package boom_v1.exec.mul
 // Copyright (c) 2015, The Regents of the University of California (Regents).
 // All Rights Reserved. See LICENSE for license details.
 //------------------------------------------------------------------------------
+import boom_v1.ScalarOpConstants._
+import boom_v1.Utils.{Fill, MuxCase}
 import spinal.core._
 import spinal.lib._
 
@@ -31,17 +33,17 @@ class IMul(imul_stages: Int) extends Module
 
   val lhs = Cat(
     io.in0(63) & sxl64,
-    Fill(32, ~zxl32)&io.in0(63,32) | Fill(32, sxl32&io.in0(31)),
-    io.in0(31,0)) //TODO: 65 bits
+    Fill(32, ~zxl32) & io.in0(63 downto 32).asBits | Fill(32, sxl32&io.in0(31)),
+    io.in0(31 downto 0).asBits) //TODO: 65 bits
   val rhs = Cat(
     io.in1(63) & sxr64,
-    Fill(32, ~zxr32)&io.in1(63,32) | Fill(32, sxr32&io.in1(31)),
-    io.in1(31,0)) //TODO: 65 bits
+    Fill(32, ~zxr32)&io.in1(63 downto 32).asBits | Fill(32, sxr32&io.in1(31)),
+    io.in1(31 downto 0).asBits) //TODO: 65 bits
 
   val mul_result = lhs.toSInt * rhs.toSInt //TODO:130 bits
 
   val mul_output_mux = MuxCase(
-    UInt(0, 64), Array(
+    U(0, 64 bits), Array(
       FN(DW_64, FN_MUL)    -> mul_result(63,0),
       FN(DW_64, FN_MULH)   -> mul_result(127,64),
       FN(DW_64, FN_MULHU)  -> mul_result(127,64),
