@@ -67,6 +67,7 @@ trait HasFPUCtrlSigs {
 class FPUCtrlSigs extends Bundle with HasFPUCtrlSigs
 
 class FPUDecoder(implicit p: Parameters) extends FPUModule()(p) {
+  val fLen = p.fLen
   val io = new Bundle {
     val inst = in Bits(32 bits)
     val sigs = new FPUCtrlSigs().asOutput
@@ -142,7 +143,7 @@ class FPUDecoder(implicit p: Parameters) extends FPUModule()(p) {
     case 32 => f
     case 64 => f ++ d
   }
-  val decoder = DecodeLogic(io.inst, default, insns)
+  val decoder = DecodeLogic(io.inst.asUInt, default, insns)
   val s = io.sigs
   val sigs = Seq(s.cmd, s.ldst, s.wen, s.ren1, s.ren2, s.ren3, s.swap12,
     s.swap23, s.single, s.fromint, s.toint, s.fastpipe, s.fma,
@@ -242,8 +243,8 @@ object RecFNToRecFN_noncompliant {
     val expOut = {
       val expCode = expIn.slice(inExpWidth, inExpWidth - 2)
       val commonCase = (expIn + (1 << outExpWidth)) - (1 << inExpWidth)
-      Mux(expCode === 0 || expCode >= 6, Cat(expCode, commonCase(outExpWidth - 3, 0)),
-        commonCase(outExpWidth, 0))
+      Mux(expCode === 0 || expCode >= 6, Cat(expCode, commonCase.slice(outExpWidth - 3, 0)),
+        commonCase.slice(outExpWidth, 0))
     }
     Cat(sign, expOut, fractOut)
   }
@@ -251,9 +252,9 @@ object RecFNToRecFN_noncompliant {
 
 object CanonicalNaN {
   def apply(expWidth: Int, sigWidth: Int): UInt =
-    UInt((BigInt(7) << (expWidth + sigWidth - 3)) + (BigInt(1) << (sigWidth - 2)), expWidth + sigWidth + 1)
+    U((BigInt(7) << (expWidth + sigWidth - 3)) + (BigInt(1) << (sigWidth - 2)), expWidth + sigWidth + 1 bits)
   def signaling(expWidth: Int, sigWidth: Int): UInt =
-    UInt((BigInt(7) << (expWidth + sigWidth - 3)) + (BigInt(1) << (sigWidth - 3)), expWidth + sigWidth + 1)
+    U((BigInt(7) << (expWidth + sigWidth - 3)) + (BigInt(1) << (sigWidth - 3)), expWidth + sigWidth + 1 bits)
 }
 
 trait HasFPUParameters {
@@ -271,82 +272,82 @@ trait HasFPUParameters {
 abstract class FPUModule(implicit p: Parameters) extends Module with HasFPUParameters
 
 class FPToInt(implicit p: Parameters) extends FPUModule()(p) {
+  val fLen = p.fLen
   class Output extends Bundle {
     val lt = Bool()
     val store = Bits(width = fLen)
-    val toint = Bits(width = xLen)
+    val toint = Bits(width = p.xLen)
     val exc = Bits(width = 5)
-    override def cloneType = new Output().asInstanceOf[this.type]
   }
   val io = new Bundle {
-    val in = Valid(new FPInput).flip
+    val in = slave(Valid(new FPInput))
     val as_double = new FPInput().asOutput
     val out = Valid(new Output)
   }
 
   val in = Reg(new FPInput)
-  val valid = Reg(next=io.in.valid)
+  val valid = RegNext(io.in.valid)
 
   def upconvert(x: UInt) = RecFNToRecFN_noncompliant(x, sExpWidth, sSigWidth, maxExpWidth, maxSigWidth)
 
   when (io.in.valid) {
-    in := io.in.bits
-    if (fLen > 32) when (io.in.bits.single && !io.in.bits.ldst && io.in.bits.cmd =/= FCMD_MV_XF) {
-      in.in1 := upconvert(io.in.bits.in1)
-      in.in2 := upconvert(io.in.bits.in2)
+    in := io.in.payload
+    if (fLen > 32) when (io.in.payload.single && !io.in.payload.ldst && io.in.payload.cmd =/= FCMD_MV_XF) {
+      in.in1 := upconvert(io.in.payload.in1.asUInt)
+      in.in2 := upconvert(io.in.payload.in2.asUInt)
     }
   }
 
-  val unrec_s = hardfloat.fNFromRecFN(sExpWidth, sSigWidth, in.in1).sextTo(xLen)
+  val unrec_s = hardfloat.fNFromRecFN(sExpWidth, sSigWidth, in.in1).sextTo(p.xLen)
   val unrec_mem = fLen match {
     case 32 => unrec_s
     case 64 =>
-      val unrec_d = hardfloat.fNFromRecFN(dExpWidth, dSigWidth, in.in1).sextTo(xLen)
+      val unrec_d = hardfloat.fNFromRecFN(dExpWidth, dSigWidth, in.in1).sextTo(p.xLen)
       Mux(in.single, unrec_s, unrec_d)
   }
-  val unrec_int = xLen match {
+  val unrec_int = p.xLen match {
     case 32 => unrec_s
     case fLen => unrec_mem
   }
 
-  val classify_s = ClassifyRecFN(sExpWidth, sSigWidth, in.in1)
+  val classify_s = ClassifyRecFN(sExpWidth, sSigWidth, in.in1.asUInt)
   val classify_out = fLen match {
     case 32 => classify_s
     case 64 =>
-      val classify_d = ClassifyRecFN(dExpWidth, dSigWidth, in.in1)
+      val classify_d = ClassifyRecFN(dExpWidth, dSigWidth, in.in1.asUInt)
       Mux(in.single, classify_s, classify_d)
   }
 
-  val dcmp = Module(new hardfloat.CompareRecFN(maxExpWidth, maxSigWidth))
+  val dcmp = (new hardfloat.CompareRecFN(maxExpWidth, maxSigWidth))
   dcmp.io.a := in.in1
   dcmp.io.b := in.in2
   dcmp.io.signaling := !in.rm(1)
 
-  io.out.bits.toint := Mux(in.rm(0), classify_out, unrec_int)
-  io.out.bits.store := unrec_mem
-  io.out.bits.exc := Bits(0)
+  io.out.payload.toint := Mux(in.rm(0), classify_out, unrec_int)
+  io.out.payload.store := unrec_mem
+  io.out.payload.exc := Bits(0)
 
   when (in.cmd === FCMD_CMP) {
-    io.out.bits.toint := (~in.rm & Cat(dcmp.io.lt, dcmp.io.eq)).orR
-    io.out.bits.exc := dcmp.io.exceptionFlags
+    io.out.payload.toint := (~in.rm & Cat(dcmp.io.lt, dcmp.io.eq)).orR
+    io.out.payload.exc := dcmp.io.exceptionFlags
   }
   when (in.cmd === FCMD_CVT_IF) {
     val minXLen = 32
-    val n = log2Ceil(xLen/minXLen) + 1
+    val n = log2Up(p.xLen/minXLen) + 1
     for (i <- 0 until n) {
-      val conv = Module(new hardfloat.RecFNToIN(maxExpWidth, maxSigWidth, minXLen << i))
-      conv.io.in := in.in1
+      val conv = (new hardfloat.RecFNToIN(maxExpWidth, maxSigWidth, minXLen << i))
+      conv.io.inRecFn := in.in1
       conv.io.roundingMode := in.rm
       conv.io.signedOut := ~in.typ(0)
-      when (in.typ.extract(log2Ceil(n), 1) === i) {
-        io.out.bits.toint := conv.io.out.sextTo(xLen)
-        io.out.bits.exc := Cat(conv.io.intExceptionFlags(2, 1).orR, UInt(0, 3), conv.io.intExceptionFlags(0))
+      when (in.typ.slice(log2Up(n), 1) === i) {
+        io.out.payload.toint := conv.io.outIN.sextTo(p.xLen)
+        io.out.payload.exc := Cat(conv.io.intExceptionFlags(2 downto 1).orR, U(0, 3 bits), conv.io.intExceptionFlags(0))
       }
     }
   }
 
   io.out.valid := valid
-  io.out.bits.lt := dcmp.io.lt
+  io.out.payload.lt := dcmp.io.lt
   io.as_double := in
 }
 

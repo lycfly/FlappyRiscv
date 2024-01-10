@@ -173,7 +173,7 @@ import boom_v1.exec.FPU.FPConstants._
     val fpiu = (new FPToInt)
     fpiu.io.in.valid := io.req.valid && (fp_ctrl.toint || fp_ctrl.cmd === FCMD_MINMAX)
     fpiu.io.in.payload := req
-    val fpiu_out = Pipe(Reg(next=fpiu.io.in.valid && !fp_ctrl.fastpipe),
+    val fpiu_out = Pipe(RegNext(fpiu.io.in.valid && !fp_ctrl.fastpipe),
       fpiu.io.out.payload, fpu_latency-1)
 
 
