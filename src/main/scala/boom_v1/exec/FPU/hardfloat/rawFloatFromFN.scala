@@ -68,7 +68,7 @@ object rawFloatFromFN {
     out.isInf := isSpecial && isZeroFractIn
     out.isZero := isZero
     out.sign := sign
-    out.sExp := (adjustedExp.msb ## adjustedExp(expWidth downto 0)).asSInt
+    out.sExp := (False ## adjustedExp(expWidth downto 0)).asSInt
     out.sig :=
       U(0, 1 bits) ## !isZero ## Mux(isZeroExpIn, subnormFract, fractIn)
     out

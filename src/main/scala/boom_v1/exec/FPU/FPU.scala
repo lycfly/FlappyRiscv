@@ -363,24 +363,24 @@ class IntToFP(val latency: Int)(implicit p: Parameters) extends FPUModule()(p) {
   mux.exc := Bits(0)
   mux.data := hardfloat.recFNFromFN(sExpWidth, sSigWidth, in.payload.in1)
   if (fLen > 32) when (!in.payload.single) {
-    mux.data := hardfloat.recFNFromFN(dExpWidth, dSigWidth, in.bits.in1)
+    mux.data := hardfloat.recFNFromFN(dExpWidth, dSigWidth, in.payload.in1)
   }
 
   val intValue = {
     val minXLen = 32
-    val n = log2Ceil(xLen/minXLen) + 1
-    val res = Wire(init = in.bits.in1.asSInt)
+    val n = log2Up(p.xLen/minXLen) + 1
+    val res = in.payload.in1.asSInt
     for (i <- 0 until n-1) {
-      val smallInt = in.bits.in1((minXLen << i) - 1, 0)
-      when (in.bits.typ.extract(log2Ceil(n), 1) === i) {
-        res := Mux(in.bits.typ(0), smallInt.zext, smallInt.asSInt)
+      val smallInt = in.payload.in1.slice((minXLen << i) - 1, 0)
+      when (in.payload.typ.slice(log2Up(n), 1) === i) {
+        res := Mux(in.payload.typ(0), smallInt.zext.resize(res.getWidth), smallInt.asSInt.resize(res.getWidth))
       }
     }
     res.asUInt
   }
 
-  when (in.bits.cmd === FCMD_CVT_FI) {
-    val l2s = Module(new hardfloat.INToRecFN(xLen, sExpWidth, sSigWidth))
+  when (in.payload.cmd === FCMD_CVT_FI) {
+    val l2s = (new hardfloat.INToRecFN(p.xLen, sExpWidth, sSigWidth))
     l2s.io.signedIn := ~in.bits.typ(0)
     l2s.io.in := intValue
     l2s.io.roundingMode := in.bits.rm

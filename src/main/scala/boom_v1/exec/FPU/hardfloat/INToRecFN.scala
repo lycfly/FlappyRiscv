@@ -39,27 +39,40 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 import spinal.core._
 import spinal.lib._
+import boom_v1.Utils._
+import consts._
 
-/*----------------------------------------------------------------------------
-| In the result, no more than one of 'isNaN', 'isInf', and 'isZero' will be
-| set.
-*----------------------------------------------------------------------------*/
-object rawFloatFromRecFN
+
+class INToRecFN(intWidth: Int, expWidth: Int, sigWidth: Int) extends Module
 {
-  def apply(expWidth: Int, sigWidth: Int, in: Bits): RawFloat =
-  {
-    val exp = in(expWidth + sigWidth - 1 downto  sigWidth - 1)
-    val isZero    = exp(expWidth downto expWidth - 2) === 0
-    val isSpecial = exp(expWidth downto expWidth - 1) === 3
-
-    val out = (new RawFloat(expWidth, sigWidth))
-    out.isNaN  := isSpecial &&   exp(expWidth - 2)
-    out.isInf  := isSpecial && ! exp(expWidth - 2)
-    out.isZero := isZero
-    out.sign   := in(expWidth + sigWidth)
-    out.sExp   := (False ## exp).asSInt
-    out.sig    := U(0, 1 bits) ## ! isZero ## in(sigWidth - 2 downto 0)
-    out
+  val io = new Bundle {
+    val signedIn = in(Bool())
+    val in = in(Bits(intWidth bits))
+    val roundingMode   = in(UInt(3 bits))
+    val detectTininess = in(UInt(1 bits))
+    val outRecFN = out(Bits((expWidth + sigWidth + 1) bits))
+    val exceptionFlags = out(Bits(5 bits))
   }
+
+  //------------------------------------------------------------------------
+  //------------------------------------------------------------------------
+  val intAsRawFloat = rawFloatFromIN(io.signedIn, io.in);
+
+  val roundAnyRawFNToRecFN =
+      new RoundAnyRawFNToRecFN(
+        intAsRawFloat.expWidth,
+        intWidth,
+        expWidth,
+        sigWidth,
+        flRoundOpt_sigMSBitAlwaysZero | flRoundOpt_neverUnderflows
+      )
+  roundAnyRawFNToRecFN.io.invalidExc     := False
+  roundAnyRawFNToRecFN.io.infiniteExc    := False
+  roundAnyRawFNToRecFN.io.in             := intAsRawFloat
+  roundAnyRawFNToRecFN.io.roundingMode   := io.roundingMode
+  roundAnyRawFNToRecFN.io.detectTininess := io.detectTininess
+  io.outRecFN       := roundAnyRawFNToRecFN.io.out
+  io.exceptionFlags := roundAnyRawFNToRecFN.io.exceptionFlags
 }
+
 

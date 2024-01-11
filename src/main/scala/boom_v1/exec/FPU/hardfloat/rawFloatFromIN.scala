@@ -1,5 +1,3 @@
-package boom_v1.exec.FPU.hardfloat
-
 
 /*============================================================================
 
@@ -7,7 +5,7 @@ This Chisel source file is part of a pre-release version of the HardFloat IEEE
 Floating-Point Arithmetic Package, by John R. Hauser (with some contributions
 from Yunsup Lee and Andrew Waterman, mainly concerning testing).
 
-Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the
+Copyright 2010, 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
 University of California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -37,29 +35,34 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
+package boom_v1.exec.FPU.hardfloat
 import spinal.core._
 import spinal.lib._
-
-/*----------------------------------------------------------------------------
-| In the result, no more than one of 'isNaN', 'isInf', and 'isZero' will be
-| set.
-*----------------------------------------------------------------------------*/
-object rawFloatFromRecFN
+import boom_v1.Utils._
+object rawFloatFromIN
 {
-  def apply(expWidth: Int, sigWidth: Int, in: Bits): RawFloat =
-  {
-    val exp = in(expWidth + sigWidth - 1 downto  sigWidth - 1)
-    val isZero    = exp(expWidth downto expWidth - 2) === 0
-    val isSpecial = exp(expWidth downto expWidth - 1) === 3
+    def apply(signedIn: Bool, in: Bits): RawFloat =
+    {
+        val expWidth = log2Up(in.getWidth) + 1
+//*** CHANGE THIS; CAN BE VERY LARGE:
+        val extIntWidth = 1<<(expWidth - 1)
 
-    val out = (new RawFloat(expWidth, sigWidth))
-    out.isNaN  := isSpecial &&   exp(expWidth - 2)
-    out.isInf  := isSpecial && ! exp(expWidth - 2)
-    out.isZero := isZero
-    out.sign   := in(expWidth + sigWidth)
-    out.sExp   := (False ## exp).asSInt
-    out.sig    := U(0, 1 bits) ## ! isZero ## in(sigWidth - 2 downto 0)
-    out
-  }
+        val sign = signedIn && in(in.getWidth - 1)
+        val absIn = Mux(sign, ~in.asUInt+1, in.asUInt)
+        val extAbsIn = (U(0,extIntWidth bits) ## absIn)(extIntWidth - 1 downto 0)
+        val adjustedNormDist = countLeadingZeros(extAbsIn.asUInt)
+        val sig =
+            (extAbsIn<<adjustedNormDist)(
+                extIntWidth - 1 downto extIntWidth - in.getWidth)
+
+        val out = (new RawFloat(expWidth, in.getWidth))
+        out.isNaN  := False
+        out.isInf  := False
+        out.isZero := !sig(in.getWidth - 1)
+        out.sign   := sign
+        out.sExp   := (False ## (U(2, 2 bits) ## ~adjustedNormDist(expWidth - 2 downto 0))).asSInt
+        out.sig    := sig
+        out
+    }
 }
 
