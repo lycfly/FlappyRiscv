@@ -68,7 +68,7 @@ object lowMask
                     )
                 } else {
                     Mux(msb,
-                        lowMask(lsbs, topBound - mid, 0) ## ((BigInt(1)<<(mid - bottomBound).toInt) - 1).U,
+                        (lowMask(lsbs, topBound - mid, 0) ## ((BigInt(1)<<(mid - bottomBound).toInt) - 1).U).asUInt,
                         lowMask(lsbs, mid, bottomBound)
                     )
                 }
@@ -78,11 +78,11 @@ object lowMask
         } else {
             val shift = (BigInt(-1)<<numInVals.toInt).S>>in
             Reverse(
-                shift(
+                shift.extract(
                     (numInVals - 1 - bottomBound).toInt,
                     (numInVals - topBound).toInt
                 )
-            )
+            ).asUInt
         }
     }
 }

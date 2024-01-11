@@ -154,13 +154,13 @@ RoundAnyRawFNToRecFN(
         sAdjustedExp.extract(outExpWidth, 0).asUInt,
         outMinNormExp - outSigWidth - 1,
         outMinNormExp
-      ) | doShiftSigDown1) ##
+      ) | doShiftSigDown1.asUInt) ##
         3.U(2.W)
 
     val shiftedRoundMask = 0.U(1.W) ## roundMask >> 1
     val roundPosMask = ~shiftedRoundMask & roundMask
-    val roundPosBit = (adjustedSig & roundPosMask).orR
-    val anyRoundExtra = (adjustedSig & shiftedRoundMask).orR
+    val roundPosBit = (adjustedSig & roundPosMask.asUInt).orR
+    val anyRoundExtra = (adjustedSig & shiftedRoundMask.asUInt).orR
     val anyRound = roundPosBit || anyRoundExtra
 
     val roundIncr =
