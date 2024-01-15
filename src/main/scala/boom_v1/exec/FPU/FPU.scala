@@ -491,7 +491,7 @@ class FPUFMAPipe(val latency: Int, expWidth: Int, sigWidth: Int)(implicit p: Par
     val cmd_addsub = io.in.payload.swap23
     in.cmd := Cat(io.in.payload.cmd(1) & (cmd_fma || cmd_addsub), io.in.payload.cmd(0))
     when (cmd_addsub) { in.in2 := one }
-    unless (cmd_fma || cmd_addsub) { in.in3 := zero }
+    .elsewhen (cmd_fma || cmd_addsub) { in.in3 := zero }
   }
 
   val fma = (new hardfloat.MulAddRecFN(expWidth, sigWidth))

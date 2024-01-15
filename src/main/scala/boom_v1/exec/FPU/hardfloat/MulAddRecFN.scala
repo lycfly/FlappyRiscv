@@ -1,4 +1,7 @@
 package boom_v1.exec.FPU.hardfloat
+import boom_v1.Utils._
+import boom_v1.Utils.chiselDotDef._
+import boom_v1.Utils.chiselExtract._
 import spinal.core._
 import spinal.lib._
 
@@ -58,7 +61,7 @@ class MulAddRecFN_interIo(expWidth: Int, sigWidth: Int) extends Bundle
   val sExpSum         = SInt((expWidth + 2).W)
   val doSubMags       = Bool()
   val CIsDominant     = Bool()
-  val CDom_CAlignDist = UInt(log2Ceil(sigWidth + 1).W)
+  val CDom_CAlignDist = UInt(log2Up(sigWidth + 1).W)
   val highAlignedSigC = UInt((sigWidth + 2).W)
   val bit0AlignedSigC = UInt(1.W)
 
@@ -66,9 +69,9 @@ class MulAddRecFN_interIo(expWidth: Int, sigWidth: Int) extends Bundle
 
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
-class MulAddRecFNToRaw_preMul(expWidth: Int, sigWidth: Int) extends RawModule
+class MulAddRecFNToRaw_preMul(expWidth: Int, sigWidth: Int) extends Module
 {
-  val io = IO(new Bundle {
+  val io = (new Bundle {
     val op = Input(Bits(2.W))
     val a = Input(Bits((expWidth + sigWidth + 1).W))
     val b = Input(Bits((expWidth + sigWidth + 1).W))
@@ -94,22 +97,22 @@ class MulAddRecFNToRaw_preMul(expWidth: Int, sigWidth: Int) extends RawModule
   val signProd = rawA.sign ^ rawB.sign ^ io.op(1)
   //*** REVIEW THE BIAS FOR 'sExpAlignedProd':
   val sExpAlignedProd =
-    rawA.sExp +& rawB.sExp + (-(BigInt(1)<<expWidth) + sigWidth + 3).S
+    rawA.sExp +^ rawB.sExp + (-(BigInt(1)<<expWidth) + sigWidth + 3).S // width = expwidth + 2 + 1
 
   val doSubMags = signProd ^ rawC.sign ^ io.op(0)
 
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
   val sNatCAlignDist = sExpAlignedProd - rawC.sExp
-  val posNatCAlignDist = sNatCAlignDist(expWidth + 1, 0)
+  val posNatCAlignDist = sNatCAlignDist.extract(expWidth + 1, 0)
   val isMinCAlign = rawA.isZero || rawB.isZero || (sNatCAlignDist < 0.S)
   val CIsDominant =
-    ! rawC.isZero && (isMinCAlign || (posNatCAlignDist <= sigWidth.U))
+    ! rawC.isZero && (isMinCAlign || (posNatCAlignDist.asUInt <= sigWidth.U))
   val CAlignDist =
     Mux(isMinCAlign,
       0.U,
-      Mux(posNatCAlignDist < (sigSumWidth - 1).U,
-        posNatCAlignDist(log2Ceil(sigSumWidth) - 1, 0),
+      Mux(posNatCAlignDist.asUInt < (sigSumWidth - 1).U,
+        posNatCAlignDist.extract(log2Up(sigSumWidth) - 1, 0).asUInt,
         (sigSumWidth - 1).U
       )
     )
@@ -118,7 +121,7 @@ class MulAddRecFNToRaw_preMul(expWidth: Int, sigWidth: Int) extends RawModule
   val reduced4CExtra =
     (orReduceBy4(rawC.sig<<((sigSumWidth - sigWidth - 1) & 3)) &
       lowMask(
-        CAlignDist>>2,
+        (CAlignDist>>2),
         //*** NOT NEEDED?:
         //                 (sigSumWidth + 2)>>2,
         (sigSumWidth - 1)>>2,
@@ -128,8 +131,8 @@ class MulAddRecFNToRaw_preMul(expWidth: Int, sigWidth: Int) extends RawModule
   val alignedSigC =
     Cat(mainAlignedSigC>>3,
       Mux(doSubMags,
-        mainAlignedSigC(2, 0).andR && ! reduced4CExtra,
-        mainAlignedSigC(2, 0).orR  ||   reduced4CExtra
+        mainAlignedSigC.extract(2, 0).andR && ! reduced4CExtra,
+        mainAlignedSigC.extract(2, 0).orR  ||   reduced4CExtra
       )
     )
 
@@ -137,7 +140,7 @@ class MulAddRecFNToRaw_preMul(expWidth: Int, sigWidth: Int) extends RawModule
   //------------------------------------------------------------------------
   io.mulAddA := rawA.sig
   io.mulAddB := rawB.sig
-  io.mulAddC := alignedSigC(sigWidth * 2, 1)
+  io.mulAddC := alignedSigC.extract(sigWidth * 2, 1)
 
   io.toPostMul.isSigNaNAny :=
     isSigNaNRawFloat(rawA) || isSigNaNRawFloat(rawB) ||
@@ -155,9 +158,9 @@ class MulAddRecFNToRaw_preMul(expWidth: Int, sigWidth: Int) extends RawModule
     Mux(CIsDominant, rawC.sExp, sExpAlignedProd - sigWidth.S)
   io.toPostMul.doSubMags := doSubMags
   io.toPostMul.CIsDominant := CIsDominant
-  io.toPostMul.CDom_CAlignDist := CAlignDist(log2Ceil(sigWidth + 1) - 1, 0)
+  io.toPostMul.CDom_CAlignDist := CAlignDist.extract(log2Up(sigWidth + 1) - 1, 0)
   io.toPostMul.highAlignedSigC :=
-    alignedSigC(sigSumWidth - 1, sigWidth * 2 + 1)
+    alignedSigC.extract(sigSumWidth - 1, sigWidth * 2 + 1)
   io.toPostMul.bit0AlignedSigC := alignedSigC(0)
 }
 
@@ -293,9 +296,9 @@ class MulAddRecFNToRaw_postMul(expWidth: Int, sigWidth: Int) extends Module
 //----------------------------------------------------------------------------
 //----------------------------------------------------------------------------
 
-class MulAddRecFN(expWidth: Int, sigWidth: Int) extends RawModule
+class MulAddRecFN(expWidth: Int, sigWidth: Int) extends Module
 {
-  val io = IO(new Bundle {
+  val io = (new Bundle {
     val op = Input(Bits(2.W))
     val a = Input(Bits((expWidth + sigWidth + 1).W))
     val b = Input(Bits((expWidth + sigWidth + 1).W))
@@ -309,9 +312,9 @@ class MulAddRecFN(expWidth: Int, sigWidth: Int) extends RawModule
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
   val mulAddRecFNToRaw_preMul =
-  Module(new MulAddRecFNToRaw_preMul(expWidth, sigWidth))
+  (new MulAddRecFNToRaw_preMul(expWidth, sigWidth))
   val mulAddRecFNToRaw_postMul =
-    Module(new MulAddRecFNToRaw_postMul(expWidth, sigWidth))
+    (new MulAddRecFNToRaw_postMul(expWidth, sigWidth))
 
   mulAddRecFNToRaw_preMul.io.op := io.op
   mulAddRecFNToRaw_preMul.io.a  := io.a
@@ -320,7 +323,7 @@ class MulAddRecFN(expWidth: Int, sigWidth: Int) extends RawModule
 
   val mulAddResult =
     (mulAddRecFNToRaw_preMul.io.mulAddA *
-      mulAddRecFNToRaw_preMul.io.mulAddB) +&
+      mulAddRecFNToRaw_preMul.io.mulAddB) +^
       mulAddRecFNToRaw_preMul.io.mulAddC
 
   mulAddRecFNToRaw_postMul.io.fromPreMul :=
@@ -331,7 +334,7 @@ class MulAddRecFN(expWidth: Int, sigWidth: Int) extends RawModule
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
   val roundRawFNToRecFN =
-  Module(new RoundRawFNToRecFN(expWidth, sigWidth, 0))
+  (new RoundRawFNToRecFN(expWidth, sigWidth, 0))
   roundRawFNToRecFN.io.invalidExc   := mulAddRecFNToRaw_postMul.io.invalidExc
   roundRawFNToRecFN.io.infiniteExc  := false.B
   roundRawFNToRecFN.io.in           := mulAddRecFNToRaw_postMul.io.rawOut
