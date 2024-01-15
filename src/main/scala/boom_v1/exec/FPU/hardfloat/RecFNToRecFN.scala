@@ -1,5 +1,3 @@
-package boom_v1.exec.FPU.hardfloat
-
 
 /*============================================================================
 
@@ -37,42 +35,57 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
+package boom_v1.exec.FPU.hardfloat
+
 import spinal.core._
 import spinal.lib._
 import boom_v1.Utils._
+import boom_v1.Utils.chiselDotDef._
 import consts._
-
-
-class INToRecFN(intWidth: Int, expWidth: Int, sigWidth: Int) extends Module
+class
+    RecFNToRecFN(
+        inExpWidth: Int, inSigWidth: Int, outExpWidth: Int, outSigWidth: Int)
+    extends Module
 {
-  val io = new Bundle {
-    val signedIn = in(Bool())
-    val inInt = in(Bits(intWidth bits))
-    val roundingMode   = in(UInt(3 bits))
-    val detectTininess = in(UInt(1 bits))
-    val outRecFN = out(Bits((expWidth + sigWidth + 1) bits))
-    val exceptionFlags = out(Bits(5 bits))
-  }
+    val io = (new Bundle {
+        val in = Input(Bits((inExpWidth + inSigWidth + 1).W))
+        val roundingMode   = Input(UInt(3.W))
+        val detectTininess = Input(UInt(1.W))
+        val out = Output(Bits((outExpWidth + outSigWidth + 1).W))
+        val exceptionFlags = Output(Bits(5.W))
+    })
 
-  //------------------------------------------------------------------------
-  //------------------------------------------------------------------------
-  val intAsRawFloat = rawFloatFromIN(io.signedIn, io.inInt);
+    //------------------------------------------------------------------------
+    //------------------------------------------------------------------------
+    val rawIn = rawFloatFromRecFN(inExpWidth, inSigWidth, io.in);
 
-  val roundAnyRawFNToRecFN =
-      new RoundAnyRawFNToRecFN(
-        intAsRawFloat.expWidth,
-        intWidth,
-        expWidth,
-        sigWidth,
-        flRoundOpt_sigMSBitAlwaysZero | flRoundOpt_neverUnderflows
-      )
-  roundAnyRawFNToRecFN.io.invalidExc     := False
-  roundAnyRawFNToRecFN.io.infiniteExc    := False
-  roundAnyRawFNToRecFN.io.in             := intAsRawFloat
-  roundAnyRawFNToRecFN.io.roundingMode   := io.roundingMode
-  roundAnyRawFNToRecFN.io.detectTininess := io.detectTininess
-  io.outRecFN       := roundAnyRawFNToRecFN.io.out
-  io.exceptionFlags := roundAnyRawFNToRecFN.io.exceptionFlags
+    if ((inExpWidth == outExpWidth) && (inSigWidth <= outSigWidth)) {
+
+        //--------------------------------------------------------------------
+        //--------------------------------------------------------------------
+        io.out            := io.in<<(outSigWidth - inSigWidth)
+        io.exceptionFlags := isSigNaNRawFloat(rawIn) ## 0.U(4.W)
+
+    } else {
+
+        //--------------------------------------------------------------------
+        //--------------------------------------------------------------------
+        val roundAnyRawFNToRecFN =
+            (
+                new RoundAnyRawFNToRecFN(
+                        inExpWidth,
+                        inSigWidth,
+                        outExpWidth,
+                        outSigWidth,
+                        flRoundOpt_sigMSBitAlwaysZero
+                    ))
+        roundAnyRawFNToRecFN.io.invalidExc     := isSigNaNRawFloat(rawIn)
+        roundAnyRawFNToRecFN.io.infiniteExc    := false.B
+        roundAnyRawFNToRecFN.io.in             := rawIn
+        roundAnyRawFNToRecFN.io.roundingMode   := io.roundingMode
+        roundAnyRawFNToRecFN.io.detectTininess := io.detectTininess
+        io.out            := roundAnyRawFNToRecFN.io.out
+        io.exceptionFlags := roundAnyRawFNToRecFN.io.exceptionFlags
+    }
 }
-
 

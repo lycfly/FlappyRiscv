@@ -167,26 +167,26 @@ RoundAnyRawFNToRecFN(
       ((roundingMode_near_even || roundingMode_near_maxMag) &&
         roundPosBit) ||
         (roundMagUp && anyRound)
-    val roundedSig: Bits =
+    val roundedSig =
       Mux(roundIncr,
-        (((adjustedSig | roundMask) >> 2) +& 1.U) &
+        (((adjustedSig | roundMask.asUInt) >> 2) +^ 1.U) &
           ~Mux(roundingMode_near_even && roundPosBit &&
             !anyRoundExtra,
-            roundMask >> 1,
+            roundMask.asUInt >> 1,
             0.U((outSigWidth + 2).W)
           ),
-        (adjustedSig & ~roundMask) >> 2 |
-          Mux(roundingMode_odd && anyRound, roundPosMask >> 1, 0.U)
+        (adjustedSig & ~roundMask.asUInt) >> 2 |
+          Mux(roundingMode_odd && anyRound, roundPosMask.asUInt >> 1, 0.U)
       )
     //*** IF SIG WIDTH IS VERY NARROW, NEED TO ACCOUNT FOR ROUND-EVEN ZEROING
     //***  M.S. BIT OF SUBNORMAL SIG?
-    val sRoundedExp = sAdjustedExp +& (roundedSig >> outSigWidth).asUInt.zext
+    val sRoundedExp = sAdjustedExp +^ (roundedSig >> outSigWidth).zext
 
-    common_expOut := sRoundedExp(outExpWidth, 0)
+    common_expOut := sRoundedExp.extract(outExpWidth, 0)
     common_fractOut :=
       Mux(doShiftSigDown1,
-        roundedSig(outSigWidth - 1, 1),
-        roundedSig(outSigWidth - 2, 0)
+        roundedSig.extract(outSigWidth - 1, 1),
+        roundedSig.extract(outSigWidth - 2, 0)
       )
     common_overflow :=
       (if (neverOverflows) false.B else
@@ -200,7 +200,7 @@ RoundAnyRawFNToRecFN(
     val unboundedRange_roundPosBit =
       Mux(doShiftSigDown1, adjustedSig(2), adjustedSig(1))
     val unboundedRange_anyRound =
-      (doShiftSigDown1 && adjustedSig(2)) || adjustedSig(1, 0).orR
+      (doShiftSigDown1 && adjustedSig(2)) || adjustedSig.extract(1, 0).orR
     val unboundedRange_roundIncr =
       ((roundingMode_near_even || roundingMode_near_maxMag) &&
         unboundedRange_roundPosBit) ||
@@ -279,7 +279,7 @@ RoundAnyRawFNToRecFN(
       Mux(isNaNOut, (BigInt(1) << (outSigWidth - 2)).U, 0.U),
       common_fractOut
     ) |
-      Fill(outSigWidth - 1, pegMaxFiniteMagOut)
+      Fill(outSigWidth - 1, pegMaxFiniteMagOut).asUInt
 
   io.out := signOut ## expOut ## fractOut
   io.exceptionFlags :=

@@ -9,7 +9,16 @@ import spinal.core.sim._
 import spinal.lib._
 
 import scala.math.log
+object MuxT {
+  def apply[T <: Data, U <: Data](cond: Bool, con: (T, U), alt: (T, U)): (T, U) =
+    (Mux(cond, con._1, alt._1), Mux(cond, con._2, alt._2))
 
+  def apply[T <: Data, U <: Data, W <: Data](cond: Bool, con: (T, U, W), alt: (T, U, W)): (T, U, W) =
+    (Mux(cond, con._1, alt._1), Mux(cond, con._2, alt._2), Mux(cond, con._3, alt._3))
+
+  def apply[T <: Data, U <: Data, W <: Data, X <: Data](cond: Bool, con: (T, U, W, X), alt: (T, U, W, X)): (T, U, W, X) =
+    (Mux(cond, con._1, alt._1), Mux(cond, con._2, alt._2), Mux(cond, con._3, alt._3), Mux(cond, con._4, alt._4))
+}
 object countLeadingZeros
 {
   def apply(in: UInt): UInt = PriorityEncoder(in.asBools.reverse)

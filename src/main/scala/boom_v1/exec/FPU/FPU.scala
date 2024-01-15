@@ -352,6 +352,7 @@ class FPToInt(implicit p: Parameters) extends FPUModule()(p) {
 }
 
 class IntToFP(val latency: Int)(implicit p: Parameters) extends FPUModule()(p) {
+  val fLen = p.fLen
   val io = new Bundle {
     val in = slave(Valid(new FPInput))
     val out = master(Valid(new FPResult))
@@ -380,25 +381,25 @@ class IntToFP(val latency: Int)(implicit p: Parameters) extends FPUModule()(p) {
   }
 
   when (in.payload.cmd === FCMD_CVT_FI) {
-    val l2s = (new hardfloat.INToRecFN(p.xLen, sExpWidth, sSigWidth))
-    l2s.io.signedIn := ~in.bits.typ(0)
-    l2s.io.in := intValue
-    l2s.io.roundingMode := in.bits.rm
+    val l2s = new hardfloat.INToRecFN(p.xLen, sExpWidth, sSigWidth)
+    l2s.io.signedIn := ~in.payload.typ(0)
+    l2s.io.inInt := intValue
+    l2s.io.roundingMode := in.payload.rm
 
     fLen match {
       case 32 =>
-        mux.data := l2s.io.out
+        mux.data := l2s.io.outRecFN
         mux.exc := l2s.io.exceptionFlags
       case 64 =>
-        val l2d = Module(new hardfloat.INToRecFN(xLen, dExpWidth, dSigWidth))
-        l2d.io.signedIn := ~in.bits.typ(0)
-        l2d.io.in := intValue
-        l2d.io.roundingMode := in.bits.rm
+        val l2d = new hardfloat.INToRecFN(p.xLen, dExpWidth, dSigWidth)
+        l2d.io.signedIn := ~in.payload.typ(0)
+        l2d.io.inInt := intValue
+        l2d.io.roundingMode := in.payload.rm
 
-        mux.data := Cat(l2d.io.out >> l2s.io.out.getWidth, l2s.io.out)
+        mux.data := Cat(l2d.io.outRecFN >> l2s.io.outRecFN.getWidth, l2s.io.outRecFN)
         mux.exc := l2s.io.exceptionFlags
-        when (!in.bits.single) {
-          mux.data := l2d.io.out
+        when (!in.payload.single) {
+          mux.data := l2d.io.outRecFN
           mux.exc := l2d.io.exceptionFlags
         }
     }
@@ -408,57 +409,58 @@ class IntToFP(val latency: Int)(implicit p: Parameters) extends FPUModule()(p) {
 }
 
 class FPToFP(val latency: Int)(implicit p: Parameters) extends FPUModule()(p) {
+  val fLen = p.fLen
   val io = new Bundle {
-    val in = Valid(new FPInput).flip
-    val out = Valid(new FPResult)
+    val in = slave(Valid(new FPInput))
+    val out = master(Valid(new FPResult))
     val lt = Bool(INPUT) // from FPToInt
   }
 
   val in = Pipe(io.in)
 
-  val signNum = Mux(in.bits.rm(1), in.bits.in1 ^ in.bits.in2, Mux(in.bits.rm(0), ~in.bits.in2, in.bits.in2))
-  val fsgnj_s = Cat(signNum(32), in.bits.in1(31, 0))
+  val signNum = Mux(in.payload.rm(1), in.payload.in1 ^ in.payload.in2, Mux(in.payload.rm(0), ~in.payload.in2, in.payload.in2))
+  val fsgnj_s = Cat(signNum(32), in.payload.in1.extract(31, 0))
   val fsgnj = fLen match {
     case 32 => fsgnj_s
-    case 64 => Mux(in.bits.single, Cat(in.bits.in1 >> 33, fsgnj_s),
-      Cat(signNum(64), in.bits.in1(63, 0)))
+    case 64 => Mux(in.payload.single, Cat(in.payload.in1 >> 33, fsgnj_s),
+      Cat(signNum(64), in.payload.in1.extract(63, 0)))
   }
   val mux = Wire(new FPResult)
   mux.exc := UInt(0)
   mux.data := fsgnj
 
-  when (in.bits.cmd === FCMD_MINMAX) {
+  when (in.payload.cmd === FCMD_MINMAX) {
     def doMinMax(expWidth: Int, sigWidth: Int) = {
-      val isnan1 = IsNaNRecFN(expWidth, sigWidth, in.bits.in1)
-      val isnan2 = IsNaNRecFN(expWidth, sigWidth, in.bits.in2)
-      val issnan1 = IsSNaNRecFN(expWidth, sigWidth, in.bits.in1)
-      val issnan2 = IsSNaNRecFN(expWidth, sigWidth, in.bits.in2)
+      val isnan1 = IsNaNRecFN(expWidth, sigWidth, in.payload.in1.asUInt)
+      val isnan2 = IsNaNRecFN(expWidth, sigWidth, in.payload.in2.asUInt)
+      val issnan1 = IsSNaNRecFN(expWidth, sigWidth, in.payload.in1.asUInt)
+      val issnan2 = IsSNaNRecFN(expWidth, sigWidth, in.payload.in2.asUInt)
       val invalid = issnan1 || issnan2
       val isNaNOut = invalid || (isnan1 && isnan2)
       val cNaN = floatWidths.filter(_._1 >= expWidth).map(x => CanonicalNaN(x._1, x._2)).reduce(_+_)
-      (isnan2 || in.bits.rm(0) =/= io.lt && !isnan1, invalid, isNaNOut, cNaN)
+      (isnan2 || in.payload.rm(0) =/= io.lt && !isnan1, invalid, isNaNOut, cNaN)
     }
     val (isLHS, isInvalid, isNaNOut, cNaN) = fLen match {
       case 32 => doMinMax(sExpWidth, sSigWidth)
-      case 64 => MuxT(in.bits.single, doMinMax(sExpWidth, sSigWidth), doMinMax(dExpWidth, dSigWidth))
+      case 64 => MuxT(in.payload.single, doMinMax(sExpWidth, sSigWidth), doMinMax(dExpWidth, dSigWidth))
     }
-    mux.exc := isInvalid << 4
-    mux.data := Mux(isNaNOut, cNaN, Mux(isLHS, in.bits.in1, in.bits.in2))
+    mux.exc := isInvalid.asBits << 4
+    mux.data := Mux(isNaNOut, cNaN, Mux(isLHS, in.payload.in1, in.payload.in2))
   }
 
   fLen match {
     case 32 =>
     case 64 =>
-      when (in.bits.cmd === FCMD_CVT_FF) {
-        val d2s = Module(new hardfloat.RecFNToRecFN(dExpWidth, dSigWidth, sExpWidth, sSigWidth))
-        d2s.io.in := in.bits.in1
-        d2s.io.roundingMode := in.bits.rm
+      when (in.payload.cmd === FCMD_CVT_FF) {
+        val d2s = (new hardfloat.RecFNToRecFN(dExpWidth, dSigWidth, sExpWidth, sSigWidth))
+        d2s.io.in := in.payload.in1
+        d2s.io.roundingMode := in.payload.rm
 
-        val s2d = Module(new hardfloat.RecFNToRecFN(sExpWidth, sSigWidth, dExpWidth, dSigWidth))
-        s2d.io.in := in.bits.in1
-        s2d.io.roundingMode := in.bits.rm
+        val s2d = (new hardfloat.RecFNToRecFN(sExpWidth, sSigWidth, dExpWidth, dSigWidth))
+        s2d.io.in := in.payload.in1
+        s2d.io.roundingMode := in.payload.rm
 
-        when (in.bits.single) {
+        when (in.payload.single) {
           mux.data := Cat(s2d.io.out >> d2s.io.out.getWidth, d2s.io.out)
           mux.exc := d2s.io.exceptionFlags
         }.otherwise {

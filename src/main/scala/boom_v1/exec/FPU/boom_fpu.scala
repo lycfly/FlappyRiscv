@@ -178,14 +178,14 @@ import boom_v1.exec.FPU.FPConstants._
 
 
     val fpiu_result  = (new FPResult)
-    fpiu_result.data := fpiu_out.bits.toint
-    fpiu_result.exc  := fpiu_out.bits.exc
+    fpiu_result.data := fpiu_out.payload.toint
+    fpiu_result.exc  := fpiu_out.payload.exc
 
 
     val fpmu = (new FPToFP(fpu_latency)) // latency 2 for rocket
     fpmu.io.in.valid := io.req.valid && fp_ctrl.fastpipe
-    fpmu.io.in.bits := req
-    fpmu.io.lt := fpiu.io.out.bits.lt
+    fpmu.io.in.payload := req
+    fpmu.io.lt := fpiu.io.out.payload.lt
 
     // Response (all FP units have been padded out to the same latency)
     io.resp.valid := ifpu.io.out.valid ||
@@ -193,15 +193,15 @@ import boom_v1.exec.FPU.FPConstants._
       fpmu.io.out.valid ||
       sfma.io.out.valid ||
       dfma.io.out.valid
-    val fpu_out   = Mux(dfma.io.out.valid, dfma.io.out.bits,
-      Mux(sfma.io.out.valid, sfma.io.out.bits,
-        Mux(ifpu.io.out.valid, ifpu.io.out.bits,
+    val fpu_out   = Mux(dfma.io.out.valid, dfma.io.out.payload,
+      Mux(sfma.io.out.valid, sfma.io.out.payload,
+        Mux(ifpu.io.out.valid, ifpu.io.out.payload,
           Mux(fpiu_out.valid,    fpiu_result,
-            fpmu.io.out.bits))))
+            fpmu.io.out.payload))))
 
-    io.resp.bits.data              := fpu_out.data
-    io.resp.bits.fflags.valid      := io.resp.valid
-    io.resp.bits.fflags.bits.flags := fpu_out.exc
+    io.resp.payload.data              := fpu_out.data
+    io.resp.payload.fflags.valid      := io.resp.valid
+    io.resp.payload.fflags.payload.flags := fpu_out.exc
 
     // TODO why is this assertion failing?
     //   assert (PopCount(Vec(ifpu.io.out, fpiu_out, fpmu.io.out, sfma.io.out, dfma.io.out).map(_.valid)) <= UInt(1),
