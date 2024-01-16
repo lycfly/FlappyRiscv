@@ -474,6 +474,7 @@ class FPToFP(val latency: Int)(implicit p: Parameters) extends FPUModule()(p) {
 }
 
 class FPUFMAPipe(val latency: Int, expWidth: Int, sigWidth: Int)(implicit p: Parameters) extends FPUModule()(p) {
+  val fLen = p.fLen
   val io = new Bundle {
     val in = slave(Valid(new FPInput))
     val out = master(Valid(new FPResult))

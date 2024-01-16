@@ -2,6 +2,7 @@ package boom_v1.exec.FPU.hardfloat
 import boom_v1.Utils._
 import boom_v1.Utils.chiselDotDef._
 import boom_v1.Utils.chiselExtract._
+import boom_v1.exec.FPU.hardfloat.consts.round_min
 import spinal.core._
 import spinal.lib._
 
@@ -168,7 +169,7 @@ class MulAddRecFNToRaw_preMul(expWidth: Int, sigWidth: Int) extends Module
 //----------------------------------------------------------------------------
 class MulAddRecFNToRaw_postMul(expWidth: Int, sigWidth: Int) extends Module
 {
-  val io = IO(new Bundle {
+  val io = (new Bundle {
     val fromPreMul = Input(new MulAddRecFN_interIo(expWidth, sigWidth))
     val mulAddResult = Input(UInt((sigWidth * 2 + 1).W))
     val roundingMode = Input(UInt(3.W))
@@ -192,37 +193,37 @@ class MulAddRecFNToRaw_postMul(expWidth: Int, sigWidth: Int) extends Module
       io.fromPreMul.highAlignedSigC + 1.U,
       io.fromPreMul.highAlignedSigC
     ),
-      io.mulAddResult(sigWidth * 2 - 1, 0),
+      io.mulAddResult.extract(sigWidth * 2 - 1, 0),
       io.fromPreMul.bit0AlignedSigC
     )
 
   //------------------------------------------------------------------------
   //------------------------------------------------------------------------
   val CDom_sign = opSignC
-  val CDom_sExp = io.fromPreMul.sExpSum - io.fromPreMul.doSubMags.zext
+  val CDom_sExp = io.fromPreMul.sExpSum - io.fromPreMul.doSubMags.asUInt.resize(io.fromPreMul.sExpSum.getWidth).asSInt
   val CDom_absSigSum =
     Mux(io.fromPreMul.doSubMags,
-      ~sigSum(sigSumWidth - 1, sigWidth + 1),
+      ~sigSum.extract(sigSumWidth - 1, sigWidth + 1),
       0.U(1.W) ##
         //*** IF GAP IS REDUCED TO 1 BIT, MUST REDUCE THIS COMPONENT TO 1 BIT TOO:
-        io.fromPreMul.highAlignedSigC(sigWidth + 1, sigWidth) ##
-        sigSum(sigSumWidth - 3, sigWidth + 2)
+        io.fromPreMul.highAlignedSigC.extract(sigWidth + 1, sigWidth) ##
+        sigSum.extract(sigSumWidth - 3, sigWidth + 2)
 
     )
   val CDom_absSigSumExtra =
     Mux(io.fromPreMul.doSubMags,
-      (~sigSum(sigWidth, 1)).orR,
-      sigSum(sigWidth + 1, 1).orR
+      (~sigSum.extract(sigWidth, 1)).orR,
+      sigSum.extract(sigWidth + 1, 1).orR
     )
   val CDom_mainSig =
-    (CDom_absSigSum<<io.fromPreMul.CDom_CAlignDist)(
+    (CDom_absSigSum<<io.fromPreMul.CDom_CAlignDist).extract(
       sigWidth * 2 + 1, sigWidth - 3)
   val CDom_reduced4SigExtra =
-    (orReduceBy4(CDom_absSigSum(sigWidth - 1, 0)<<(~sigWidth & 3)) &
+    (orReduceBy4(CDom_absSigSum.extract(sigWidth - 1, 0).asUInt<<(~sigWidth & 3)) &
       lowMask(io.fromPreMul.CDom_CAlignDist>>2, 0, sigWidth>>2)).orR
   val CDom_sig =
     Cat(CDom_mainSig>>3,
-      CDom_mainSig(2, 0).orR || CDom_reduced4SigExtra ||
+      CDom_mainSig.extract(2, 0).orR || CDom_reduced4SigExtra ||
         CDom_absSigSumExtra
     )
 
@@ -231,27 +232,27 @@ class MulAddRecFNToRaw_postMul(expWidth: Int, sigWidth: Int) extends Module
   val notCDom_signSigSum = sigSum(sigWidth * 2 + 3)
   val notCDom_absSigSum =
     Mux(notCDom_signSigSum,
-      ~sigSum(sigWidth * 2 + 2, 0),
-      sigSum(sigWidth * 2 + 2, 0) + io.fromPreMul.doSubMags
+      ~sigSum.extract(sigWidth * 2 + 2, 0).asUInt,
+      sigSum.extract(sigWidth * 2 + 2, 0).asUInt + io.fromPreMul.doSubMags.asUInt
     )
   val notCDom_reduced2AbsSigSum = orReduceBy2(notCDom_absSigSum)
   val notCDom_normDistReduced2 = countLeadingZeros(notCDom_reduced2AbsSigSum)
   val notCDom_nearNormDist = notCDom_normDistReduced2<<1
-  val notCDom_sExp = io.fromPreMul.sExpSum - notCDom_nearNormDist.asUInt.zext
+  val notCDom_sExp = io.fromPreMul.sExpSum - notCDom_nearNormDist.zext
   val notCDom_mainSig =
-    (notCDom_absSigSum<<notCDom_nearNormDist)(
+    (notCDom_absSigSum<<notCDom_nearNormDist).extract(
       sigWidth * 2 + 3, sigWidth - 1)
   val notCDom_reduced4SigExtra =
     (orReduceBy2(
-      notCDom_reduced2AbsSigSum(sigWidth>>1, 0)<<((sigWidth>>1) & 1)) &
+      notCDom_reduced2AbsSigSum.extract(sigWidth>>1, 0)<<((sigWidth>>1) & 1)) &
       lowMask(notCDom_normDistReduced2>>1, 0, (sigWidth + 2)>>2)
       ).orR
   val notCDom_sig =
     Cat(notCDom_mainSig>>3,
-      notCDom_mainSig(2, 0).orR || notCDom_reduced4SigExtra
+      notCDom_mainSig.extract(2, 0).orR || notCDom_reduced4SigExtra
     )
   val notCDom_completeCancellation =
-    (notCDom_sig(sigWidth + 2, sigWidth + 1) === 0.U)
+    (notCDom_sig.extract(sigWidth + 2, sigWidth + 1) === 0.U)
   val notCDom_sign =
     Mux(notCDom_completeCancellation,
       roundingMode_min,
