@@ -93,13 +93,14 @@ class AddRawFN(expWidth: Int, sigWidth: Int) extends Module
     val far_mainAlignedSigSmaller = (far_sigSmaller<<5)>>alignDist
     val far_reduced4SigSmaller = orReduceBy4(far_sigSmaller<<2)
     val far_roundExtraMask = lowMask(alignDist.extract(alignDistWidth - 1, 2), (sigWidth + 5)/4, 0)
+        // sigWidth + 5 ? because orReduceBy4 use sigWidth + 3, and far_reduced4SigSmaller has << 2
     val far_alignedSigSmaller =
         Cat(far_mainAlignedSigSmaller>>3,
             far_mainAlignedSigSmaller.extract(2, 0).orR || (far_reduced4SigSmaller & far_roundExtraMask).orR)
     val far_subMags = !eqSigns
     val far_negAlignedSigSmaller = Mux(far_subMags, Cat(1.U, ~far_alignedSigSmaller), far_alignedSigSmaller)
-    val far_sigSum = (far_sigLarger<<3) + far_negAlignedSigSmaller + far_subMags
-    val far_sigOut = Mux(far_subMags, far_sigSum, (far_sigSum>>1) | far_sigSum(0))(sigWidth + 2, 0)
+    val far_sigSum = (far_sigLarger<<3) + far_negAlignedSigSmaller.asUInt + far_subMags.asUInt
+    val far_sigOut = Mux(far_subMags, far_sigSum, (far_sigSum>>1) | far_sigSum(0).asUInt).extract(sigWidth + 2, 0)
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     val notSigNaN_invalidExc = io.a.isInf && io.b.isInf && !eqSigns
@@ -117,7 +118,7 @@ class AddRawFN(expWidth: Int, sigWidth: Int) extends Module
         (!notNaN_specialCase && !closeSubMags && far_signOut)
     val common_sExpOut =
         (Mux(closeSubMags || (sDiffExps < 0.S), io.b.sExp, io.a.sExp)
-            - Mux(closeSubMags, close_nearNormDist, far_subMags).zext)
+            - Mux(closeSubMags, close_nearNormDist.asSInt, far_subMags.asSInt).zext)
     val common_sigOut = Mux(closeSubMags, close_sigOut, far_sigOut)
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
