@@ -507,7 +507,7 @@ class FPUFMAPipe(val latency: Int, expWidth: Int, sigWidth: Int)(implicit p: Par
   res.exc := fma.io.exceptionFlags
   io.out := Pipe(valid, res, latency-1)
 }
-
+/*
 class FPU(cfg: FPUParams)(implicit p: Parameters) extends FPUModule()(p) {
   val io = new FPUIO
 
@@ -766,3 +766,4 @@ trait CanHaveSharedFPUModule {
   val fpuOpt = outer.tileParams.core.fpu.map(params => Module(new FPU(params)(outer.p)))
   // TODO fpArb could go here instead of inside LegacyRoccComplex
 }
+*/

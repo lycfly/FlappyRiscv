@@ -10,6 +10,7 @@ import boom_v1.Utils.{Fill, GetNewBrMask, ImmGen, IsKilledByBranch, MuxLookup, S
 import boom_v1.commit.{Exception, RobPCRequest}
 import boom_v1.exec.FPU.{FPConstants, FPU}
 import boom_v1.exec.FPU.hardfloat.fNFromRecFN
+import boom_v1.exec.mul.{IMul, MulDiv}
 import boom_v1.predictor.boom.BpdUpdate
 import boom_v1.{Causes, MStatus, MaskedDC, MicroOp, Parameters}
 import boom_v1.predictor.{BHTUpdate, BTBUpdate, BranchPredictionResp, CFIType}
@@ -532,7 +533,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
   val r_val  = RegInit(init = Vec.fill(num_stages) { Bool(false) })
   val r_data = Reg(Vec(UInt(width=p.xLen bits),num_stages))
   r_val (0) := io.req.valid
-  r_data(0) := alu.io.out
+  r_data(0) := alu.io.alu_out
   for (i <- 1 until num_stages)
   {
     r_val(i)  := r_val(i-1)
@@ -545,7 +546,7 @@ class ALUUnit(is_branch_unit: Boolean = false, num_stages: Int = 1)(implicit p: 
   require (num_stages >= 1)
   require (num_bypass_stages >= 1)
   io.bypass.valid(0) := io.req.valid
-  io.bypass.data (0) := alu.io.out
+  io.bypass.data (0) := alu.io.alu_out
   for (i <- 1 until num_stages)
   {
     io.bypass.valid(i) := r_val(i-1)
@@ -575,7 +576,7 @@ class MemAddrCalcUnit(implicit p: Parameters) extends PipelinedFunctionalUnit(nu
   // requires decoding 65-bit FP data
   val unrec_s = fNFromRecFN(8, 24, io.req.payload.rs2_data.asBits)
   val unrec_d = fNFromRecFN(11, 53, io.req.payload.rs2_data.asBits)
-  val unrec_out = Mux(io.req.payload.uop.fp_single, Cat(Fill(32, unrec_s(31)), unrec_s).asUInt, unrec_d)
+  val unrec_out = Mux(io.req.payload.uop.fp_single, Cat(Fill(32, unrec_s(31)), unrec_s).asUInt, unrec_d.asUInt)
 
   var store_data:UInt = null
   if (!p.usingFPU) store_data = io.req.payload.rs2_data
@@ -616,14 +617,19 @@ class FPUUnit(implicit p: Parameters) extends PipelinedFunctionalUnit(num_stages
   , earliest_bypass_stage = 0
   , data_width = 65)(p)
 {
-  val fpu = (new FPU())
-  fpu.io.req <> io.req
-  fpu.io.req.bits.fcsr_rm := io.fcsr_rm
+  val fpu = (new boom_v1.exec.FPU.FPU())
+//  fpu.io.req <> io.req
+  fpu.io.req.valid := io.req.fire
+  fpu.io.req.payload.uop := io.req.payload.uop
+  fpu.io.req.payload.rs1_data := io.req.payload.rs1_data
+  fpu.io.req.payload.rs2_data := io.req.payload.rs2_data
+  fpu.io.req.payload.rs3_data := io.req.payload.rs3_data
+  fpu.io.req.payload.fcsr_rm := io.fcsr_rm
 
-  io.resp.bits.data              := fpu.io.resp.bits.data
-  io.resp.bits.fflags.valid      := fpu.io.resp.bits.fflags.valid
-  io.resp.bits.fflags.bits.uop   := io.resp.bits.uop
-  io.resp.bits.fflags.bits.flags := fpu.io.resp.bits.fflags.bits.flags // kill me now
+  io.resp.payload.data              := fpu.io.resp.payload.data
+  io.resp.payload.fflags.valid      := fpu.io.resp.payload.fflags.valid
+  io.resp.payload.fflags.payload.uop   := io.resp.payload.uop
+  io.resp.payload.fflags.payload.flags := fpu.io.resp.payload.fflags.payload.flags // kill me now
 }
 
 
@@ -667,10 +673,10 @@ class MulDivUnit(implicit p: Parameters) extends UnPipelinedFunctionalUnit()(p)
 
   // request
   muldiv.io.req.valid    := io.req.valid && !this.do_kill
-  muldiv.io.req.bits.dw  := io.req.payload.uop.ctrl.fcn_dw
-  muldiv.io.req.bits.fn  := io.req.payload.uop.ctrl.op_fcn
-  muldiv.io.req.bits.in1 := io.req.payload.rs1_data
-  muldiv.io.req.bits.in2 := io.req.payload.rs2_data
+  muldiv.io.req.payload.dw  := io.req.payload.uop.ctrl.fcn_dw
+  muldiv.io.req.payload.fn  := io.req.payload.uop.ctrl.op_fcn
+  muldiv.io.req.payload.in1 := io.req.payload.rs1_data
+  muldiv.io.req.payload.in2 := io.req.payload.rs2_data
   io.req.ready           := muldiv.io.req.ready
 
   // handle pipeline kills and branch misspeculations
@@ -679,7 +685,7 @@ class MulDivUnit(implicit p: Parameters) extends UnPipelinedFunctionalUnit()(p)
   // response
   io.resp.valid          := muldiv.io.resp.valid
   muldiv.io.resp.ready   := io.resp.ready
-  io.resp.payload.data      := muldiv.io.resp.bits.data
+  io.resp.payload.data      := muldiv.io.resp.payload.data
 }
 
 class PipelinedMulUnit(num_stages: Int)(implicit p: Parameters)
@@ -697,8 +703,8 @@ class PipelinedMulUnit(num_stages: Int)(implicit p: Parameters)
   imul.io.fn    := io.req.payload.uop.ctrl.op_fcn
 
   // response
-  io.resp.payload.data      := imul.io.out
+  io.resp.payload.data      := imul.io.mul_out
 }
 
-}
+
 
