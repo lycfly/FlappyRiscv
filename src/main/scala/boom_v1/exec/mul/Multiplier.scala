@@ -43,10 +43,12 @@ class MulDiv(cfg: MulDivParams, width: Int, nXpr: Int = 32) extends Module {
   val w = io.req.payload.in1.getWidth
   val mulw = (w + cfg.mulUnroll - 1) / cfg.mulUnroll * cfg.mulUnroll
  
+//  val s_ready :: s_neg_inputs :: s_busy :: s_move_rem :: s_neg_output :: s_done :: Nil = Enum(UInt(), 6)
   val s_ready :: s_neg_inputs :: s_busy :: s_move_rem :: s_neg_output :: s_done :: Nil = Enum(UInt(), 6)
-  val state = RegInit(s_ready)
+
+  val state = RegInit(init = s_ready)
  
-  val req = Reg(io.req.bits)
+  val req = Reg(io.req.payload)
   val count = Reg(UInt(width = log2Up(w+1)))
   val neg_out = Reg(Bool())
   val isMul = Reg(Bool())

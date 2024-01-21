@@ -245,3 +245,88 @@ object Pipe {
   }
 
 }
+
+/** Defines a set of unique UInt constants
+  *
+  * Unpack with a list to specify an enumeration. Usually used with [[switch]] to describe a finite
+  * state machine.
+  *
+  * @example {{{
+  * val state_on :: state_off :: Nil = Enum(2)
+  * val current_state = WireDefault(state_off)
+  * switch (current_state) {
+  *   is (state_on) {
+  *     ...
+  *   }
+  *   is (state_off) {
+  *     ...
+  *   }
+  * }
+  * }}}
+  */
+trait Enum {
+
+  /** Returns a sequence of Bits subtypes with values from 0 until n. Helper method. */
+  protected def createValues(n: Int): Seq[spinal.core.UInt] =
+    (0 until n).map(spinal.core.U(_, (1.max(spinal.core.log2Up(n))) bits))
+
+  /** Returns n unique UInt values
+    *
+    * @param n Number of unique UInt constants to enumerate
+    * @return Enumerated constants
+    */
+  def apply(n: Int): List[spinal.core.UInt] = createValues(n).toList
+}
+
+object Enum extends Enum {
+
+  /** Returns n unique values of the specified type. Can be used with unpacking to define enums.
+    *
+    * nodeType must be of UInt type (note that Bits() creates a UInt) with unspecified width.
+    *
+    * @example {{{
+    * val state_on :: state_off :: Nil = Enum(UInt(), 2)
+    * val current_state = UInt()
+    * switch (current_state) {
+    *   is (state_on) {
+    *      ...
+    *   }
+    *   if (state_off) {
+    *      ...
+    *   }
+    * }
+    * }}}
+    */
+  def apply[T <: spinal.core.Bits](nodeType: T, n: Int): List[T] = {
+    require(nodeType.isInstanceOf[spinal.core.UInt], "Only UInt supported for enums")
+    apply(n).asInstanceOf[List[T]]
+  }
+
+  /** An old Enum API that returns a map of symbols to UInts.
+    *
+    * Unlike the new list-based Enum, which can be unpacked into vals that the compiler
+    * understands and can check, map accesses can't be compile-time checked and typos may not be
+    * caught until runtime.
+    *
+    * Despite being deprecated, this is not to be removed from the compatibility layer API.
+    * Deprecation is only to nag users to do something safer.
+    */
+  def apply[T <: spinal.core.Bits](nodeType: T, l: Symbol*): Map[Symbol, T] = {
+    require(nodeType.isInstanceOf[spinal.core.UInt], "Only UInt supported for enums")
+    (l.zip(createValues(l.length))).toMap.asInstanceOf[Map[Symbol, T]]
+  }
+
+  /** An old Enum API that returns a map of symbols to UInts.
+    *
+    * Unlike the new list-based Enum, which can be unpacked into vals that the compiler
+    * understands and can check, map accesses can't be compile-time checked and typos may not be
+    * caught until runtime.
+    *
+    * Despite being deprecated, this is not to be removed from the compatibility layer API.
+    * Deprecation is only to nag users to do something safer.
+    */
+  def apply[T <: spinal.core.Bits](nodeType: T, l: List[Symbol]): Map[Symbol, T] = {
+    require(nodeType.isInstanceOf[spinal.core.UInt], "Only UInt supported for enums")
+    (l.zip(createValues(l.length))).toMap.asInstanceOf[Map[Symbol, T]]
+  }
+}
