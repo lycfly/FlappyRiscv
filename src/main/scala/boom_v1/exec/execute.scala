@@ -1,5 +1,9 @@
 package boom_v1.exec
 
+import boom_v1.IMMType._
+import boom_v1.Utils._
+import boom_v1.Utils.chiselExtract._
+import boom_v1.Utils.chiselDotDef._
 import boom_v1.exec.FPU.FPConstants
 import boom_v1.exec.FUConstants._
 import boom_v1.predictor.{BHTUpdate, BTBUpdate}
@@ -197,34 +201,34 @@ import scala.language.postfixOps
     if (has_mul && !use_slow_mul)
     {
       imul = (new PipelinedMulUnit(p.IMUL_STAGES))
-      imul.io.req.valid         := io.req.valid && io.req.bits.uop.fu_code_is(FU_MUL)
-      imul.io.req.bits.uop      := io.req.bits.uop
-      imul.io.req.bits.rs1_data := io.req.bits.rs1_data
-      imul.io.req.bits.rs2_data := io.req.bits.rs2_data
-      imul.io.req.bits.kill     := io.req.bits.kill
+      imul.io.req.valid         := io.req.valid && io.req.payload.uop.fu_code_is(FU_MUL)
+      imul.io.req.payload.uop      := io.req.payload.uop
+      imul.io.req.payload.rs1_data := io.req.payload.rs1_data
+      imul.io.req.payload.rs2_data := io.req.payload.rs2_data
+      imul.io.req.payload.kill     := io.req.payload.kill
       imul.io.brinfo <> io.brinfo
       fu_units += imul
-      if (has_fpu) require (IMUL_STAGES == dfmaLatency)
+      if (has_fpu) require (p.IMUL_STAGES == p.dfmaLatency)
     }
 
     // FPU Unit -----------------------
     var fpu: FPUUnit = null
     val fpu_resp_val = Wire(init=Bool(false))
-    val fpu_resp_fflags = Wire(new ValidIO(new FFlagsResp()))
+    val fpu_resp_fflags = Wire(Flow(new FFlagsResp()))
     fpu_resp_fflags.valid := Bool(false)
     if (has_fpu)
     {
-      fpu = Module(new FPUUnit())
-      fpu.io.req.valid           := io.req.valid && io.req.bits.uop.fu_code_is(FU_FPU)
-      fpu.io.req.bits.uop        := io.req.bits.uop
-      fpu.io.req.bits.rs1_data   := io.req.bits.rs1_data
-      fpu.io.req.bits.rs2_data   := io.req.bits.rs2_data
-      fpu.io.req.bits.rs3_data   := io.req.bits.rs3_data
-      fpu.io.req.bits.kill       := io.req.bits.kill
+      fpu = (new FPUUnit())
+      fpu.io.req.valid           := io.req.valid && io.req.payload.uop.fu_code_is(FU_FPU)
+      fpu.io.req.payload.uop        := io.req.payload.uop
+      fpu.io.req.payload.rs1_data   := io.req.payload.rs1_data
+      fpu.io.req.payload.rs2_data   := io.req.payload.rs2_data
+      fpu.io.req.payload.rs3_data   := io.req.payload.rs3_data
+      fpu.io.req.payload.kill       := io.req.payload.kill
       fpu.io.fcsr_rm             := io.fcsr_rm
       fpu.io.brinfo <> io.brinfo
       fpu_resp_val := fpu.io.resp.valid
-      fpu_resp_fflags := fpu.io.resp.bits.fflags
+      fpu_resp_fflags := fpu.io.resp.payload.fflags
       fu_units += fpu
     }
 
@@ -242,12 +246,12 @@ import scala.language.postfixOps
     fdiv_resp_fflags.valid := Bool(false)
     if (has_fdiv)
     {
-      fdivsqrt = Module(new FDivSqrtUnit())
-      fdivsqrt.io.req.valid         := io.req.valid && io.req.bits.uop.fu_code_is(FU_FDV)
-      fdivsqrt.io.req.bits.uop      := io.req.bits.uop
-      fdivsqrt.io.req.bits.rs1_data := io.req.bits.rs1_data
-      fdivsqrt.io.req.bits.rs2_data := io.req.bits.rs2_data
-      fdivsqrt.io.req.bits.kill     := io.req.bits.kill
+      fdivsqrt = (new FDivSqrtUnit())
+      fdivsqrt.io.req.valid         := io.req.valid && io.req.payload.uop.fu_code_is(FU_FDV)
+      fdivsqrt.io.req.bits.uop      := io.req.payload.uop
+      fdivsqrt.io.req.bits.rs1_data := io.req.payload.rs1_data
+      fdivsqrt.io.req.bits.rs2_data := io.req.payload.rs2_data
+      fdivsqrt.io.req.bits.kill     := io.req.payload.kill
       fdivsqrt.io.fcsr_rm           := io.fcsr_rm
       fdivsqrt.io.brinfo <> io.brinfo
 
@@ -270,41 +274,43 @@ import scala.language.postfixOps
     muldiv_resp_val := Bool(false)
     if (has_muldiv)
     {
-      muldiv = Module(new MulDivUnit())
+      muldiv = (new MulDivUnit())
       muldiv.io.req.valid           := io.req.valid &&
-        ((io.req.bits.uop.fu_code_is(FU_DIV) && Bool(has_div)) ||
-          (io.req.bits.uop.fu_code_is(FU_MUL) && Bool(has_mul && use_slow_mul)))
-      muldiv.io.req.bits.uop        := io.req.bits.uop
-      muldiv.io.req.bits.rs1_data   := io.req.bits.rs1_data
-      muldiv.io.req.bits.rs2_data   := io.req.bits.rs2_data
+        ((io.req.payload.uop.fu_code_is(FU_DIV) && Bool(has_div)) ||
+          (io.req.payload.uop.fu_code_is(FU_MUL) && Bool(has_mul && use_slow_mul)))
+      muldiv.io.req.payload.uop        := io.req.payload.uop
+      muldiv.io.req.payload.rs1_data   := io.req.payload.rs1_data
+      muldiv.io.req.payload.rs2_data   := io.req.payload.rs2_data
       muldiv.io.brinfo              := io.brinfo
-      muldiv.io.req.bits.kill       := io.req.bits.kill
+      muldiv.io.req.payload.kill       := io.req.payload.kill
 
       // share write port with the pipelined units
       muldiv.io.resp.ready := !(fu_units.map(_.io.resp.valid).reduce(_|_))
 
       muldiv_resp_val := muldiv.io.resp.valid
       muldiv_busy := !muldiv.io.req.ready ||
-        (io.req.valid && (io.req.bits.uop.fu_code_is(FU_DIV) ||
-          (io.req.bits.uop.fu_code_is(FU_MUL) && Bool(has_mul && use_slow_mul))))
+        (io.req.valid && (io.req.payload.uop.fu_code_is(FU_DIV) ||
+          (io.req.payload.uop.fu_code_is(FU_MUL) && Bool(has_mul && use_slow_mul))))
       fu_units += muldiv
     }
 
     // Outputs (Write Port #0)  ---------------
 
     io.resp(0).valid    := fu_units.map(_.io.resp.valid).reduce(_|_)
-    io.resp(0).bits.uop := new MicroOp().fromBits(
-      PriorityMux(fu_units.map(f => (f.io.resp.valid, f.io.resp.bits.uop.toBits))))
-    io.resp(0).bits.data:= PriorityMux(fu_units.map(f => (f.io.resp.valid, f.io.resp.bits.data.toBits))).toBits
+    val uop_seleted = new MicroOp()
+    uop_seleted.assignFromBits(
+      PriorityMux(fu_units.map(f => (f.io.resp.valid, f.io.resp.payload.uop.asBits))))
+    io.resp(0).payload.uop := uop_seleted
+    io.resp(0).payload.data:= PriorityMux(fu_units.map(f => (f.io.resp.valid, f.io.resp.payload.data.asBits))).asBits
     // pulled out for critical path reasons
-    io.resp(0).bits.uop.csr_addr := ImmGen(alu.io.resp.bits.uop.imm_packed, IS_I).toUInt
-    io.resp(0).bits.uop.ctrl.csr_cmd := alu.io.resp.bits.uop.ctrl.csr_cmd
+    io.resp(0).payload.uop.csr_addr := ImmGen(alu.io.resp.payload.uop.imm_packed, IS_I.toU().asBits).asUInt
+    io.resp(0).payload.uop.ctrl.csr_cmd := alu.io.resp.payload.uop.ctrl.csr_cmd
 
-    io.resp(0).bits.fflags := Mux(fpu_resp_val, fpu_resp_fflags, fdiv_resp_fflags)
+    io.resp(0).payload.fflags := Mux(fpu_resp_val, fpu_resp_fflags, fdiv_resp_fflags)
 
-    assert ((PopCount(fu_units.map(_.io.resp.valid)) <= UInt(1) && !muldiv_resp_val && !fdiv_resp_val) ||
-      (PopCount(fu_units.map(_.io.resp.valid)) <= UInt(2) && (muldiv_resp_val || fdiv_resp_val)) ||
-      (PopCount(fu_units.map(_.io.resp.valid)) <= UInt(3) && muldiv_resp_val && fdiv_resp_val)
+    assert ((CountOne(fu_units.map(_.io.resp.valid)) <= UInt(1) && !muldiv_resp_val && !fdiv_resp_val) ||
+      (CountOne(fu_units.map(_.io.resp.valid)) <= UInt(2) && (muldiv_resp_val || fdiv_resp_val)) ||
+      (CountOne(fu_units.map(_.io.resp.valid)) <= UInt(3) && muldiv_resp_val && fdiv_resp_val)
       , "Multiple functional units are fighting over the write port.")
   }
 
@@ -322,13 +328,13 @@ import scala.language.postfixOps
     val fdiv_busy = Wire(Bool())
     io.fu_types := Mux(!fdiv_busy, FU_FDV, Bits(0))
 
-    val fdivsqrt = Module(new FDivSqrtUnit())
+    val fdivsqrt = (new FDivSqrtUnit())
     fdivsqrt.io.req <> io.req
     fdivsqrt.io.fcsr_rm    := io.fcsr_rm
     io.resp(0).valid       := fdivsqrt.io.resp.valid
-    io.resp(0).bits.uop    := fdivsqrt.io.resp.bits.uop
-    io.resp(0).bits.data   := fdivsqrt.io.resp.bits.data
-    io.resp(0).bits.fflags := fdivsqrt.io.resp.bits.fflags
+    io.resp(0).payload.uop    := fdivsqrt.io.resp.bits.uop
+    io.resp(0).payload.data   := fdivsqrt.io.resp.bits.data
+    io.resp(0).payload.fflags := fdivsqrt.io.resp.bits.fflags
     fdivsqrt.io.brinfo <> io.brinfo
     io.bypass <> fdivsqrt.io.bypass
 
