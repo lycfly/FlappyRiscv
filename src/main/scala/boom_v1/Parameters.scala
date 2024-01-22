@@ -52,7 +52,7 @@ case class Parameters(
                      ) {
   val xLen = 32
   val fLen = xLen // TODO relax this
-
+  val CacheBlockBytes = 64
   val PRV_SZ = 2
   val FETCH_WIDTH = fetchWidth // number of insts we can fetch
   val DECODE_WIDTH = decodeWidth
@@ -222,6 +222,8 @@ case class Parameters(
   // All FPU ops padded out to same delay for writeport scheduling.
   require(sfmaLatency == dfmaLatency)
 
+  val coreDCacheReqTagBits = 6
+  val dcacheReqTagBits = coreDCacheReqTagBits + log2Up(dcacheArbPorts)
 }
 
 
