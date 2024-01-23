@@ -9,6 +9,9 @@ import spinal.core.sim._
 import spinal.lib._
 
 import scala.math.log
+
+class Field[T]
+
 object MuxT {
   def apply[T <: Data, U <: Data](cond: Bool, con: (T, U), alt: (T, U)): (T, U) =
     (Mux(cond, con._1, alt._1), Mux(cond, con._2, alt._2))

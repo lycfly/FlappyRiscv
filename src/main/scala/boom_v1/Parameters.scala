@@ -212,6 +212,11 @@ case class Parameters(
   val usingFDivSqrt = FPUParams().divSqrt
 
   val mulDivParams = rocketParams.mulDiv.getOrElse(MulDivParams())
+  //************************************
+  // Load/Store Unit
+//  val dcacheParams: DCacheParams = tileParams.dcache.get
+  val dcacheParams = boom_v1.exec.lsu.DCacheParams()
+  val nTLBEntries = dcacheParams.nTLBEntries
 
   //************************************
   // Pipelining
@@ -224,6 +229,11 @@ case class Parameters(
 
   val coreDCacheReqTagBits = 6
   val dcacheReqTagBits = coreDCacheReqTagBits + log2Up(dcacheArbPorts)
+  //************************************
+  // Non-BOOM parameters
+
+  val corePAddrBits = paddrBits
+  val corePgIdxBits = pgIdxBits
 }
 
 

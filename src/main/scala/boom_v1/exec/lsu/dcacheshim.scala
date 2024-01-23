@@ -30,6 +30,7 @@ import boom_v1.Utils._
 import boom_v1.Utils.chiselExtract._
 import boom_v1.Utils.chiselDotDef._
 import boom_v1.exec.BrResolutionInfo
+import boom_v1.MemoryOpConstants._
 
   // Track Inflight Memory Requests
   class LoadReqSlotIo(implicit p: Parameters) extends Bundle()(p)
@@ -210,25 +211,25 @@ import boom_v1.exec.BrResolutionInfo
         (io.dmem.s2_nack &&
           (m2_req_uop.is_load || m2_req_uop.is_amo) &&
           m2_inflight_tag === UInt(i) &&
-          Reg(next=Reg(next=(enq_val && enq_rdy)))) ||
-        (io.core.req.bits.kill &&
+          RegNext(RegNext(enq_val && enq_rdy))) ||
+        (io.core.req.payload.kill &&
           m1_inflight_tag === UInt(i) &&
-          Reg(next=(enq_val && enq_rdy)))
+          RegNext(enq_val && enq_rdy))
       inflight_load_buffer(i).brinfo      := io.core.brinfo
       inflight_load_buffer(i).flush_pipe  := io.core.flush_pipe
-      inflight_load_buffer(i).in_uop      := io.core.req.bits.uop
+      inflight_load_buffer(i).in_uop      := io.core.req.payload.uop
     }
 
 
     // dispatch/entry logic
     val enq_idx = Wire(UInt(width = log2Up(max_num_inflight)))
-    enq_idx := UInt(0)
+    enq_idx := U(0)
 
     for (i <- max_num_inflight-1 to 0 by -1)
     {
       when (!inflight_load_buffer(i).valid)
       {
-        enq_idx := UInt(i)
+        enq_idx := U(i)
       }
     }
 
@@ -243,8 +244,8 @@ import boom_v1.exec.BrResolutionInfo
     }
 
     val new_inflight_tag = enq_idx
-    m2_inflight_tag := Reg(next=Reg(next=enq_idx))
-    m1_inflight_tag := Reg(next=enq_idx)
+    m2_inflight_tag := RegNext(RegNext(enq_idx))
+    m1_inflight_tag := RegNext(enq_idx)
 
     val enq_can_occur = enq_val && enq_rdy
 
@@ -259,15 +260,15 @@ import boom_v1.exec.BrResolutionInfo
 
     // NOTE: if !enq_rdy, then we have to kill the memory request, and nack the LSU
     // inflight load buffer resource hazard
-    val iflb_kill = Reg(next=(enq_val && !enq_rdy))
+    val iflb_kill = RegNext(enq_val && !enq_rdy)
 
 
     // try to catch if there's a resource leak
-    val full_counter = Reg(init=UInt(0,32))
-    when (enq_rdy) { full_counter := UInt(0) }
-      .otherwise     { full_counter := full_counter + UInt(1) }
+    val full_counter = RegInit(U(0,32 bits))
+    when (enq_rdy) { full_counter := U(0) }
+      .otherwise     { full_counter := full_counter + U(1) }
 
-    assert(full_counter <= UInt(10000), "Inflight buffers have been busy for 10k cycles. Probably a resource leak.")
+    assert(full_counter <= U(10000), "Inflight buffers have been busy for 10k cycles. Probably a resource leak.")
 
 
     //------------------------------------------------------------
@@ -298,13 +299,13 @@ import boom_v1.exec.BrResolutionInfo
 
     io.core.req.ready      := enq_rdy && io.dmem.req.ready
     io.dmem.req.valid      := (io.core.req.valid || prefetch_req_val)
-    io.dmem.req.bits.typ   := io.core.req.bits.uop.mem_typ
-    io.dmem.req.bits.addr  := io.core.req.bits.addr
-    io.dmem.req.bits.tag   := new_inflight_tag
-    io.dmem.req.bits.cmd   := Mux(io.core.req.valid, io.core.req.bits.uop.mem_cmd, M_PFW)
-    io.dmem.s1_data        := Reg(next=io.core.req.bits.data) //notice this is delayed a cycle!
-    io.dmem.s1_kill        := io.core.req.bits.kill || iflb_kill // kills request sent out last cycle
-    io.dmem.req.bits.phys  := Bool(true) // we always use physical addresses here,
+    io.dmem.req.payload.typ   := io.core.req.payload.uop.mem_typ
+    io.dmem.req.payload.addr  := io.core.req.payload.addr
+    io.dmem.req.payload.tag   := new_inflight_tag
+    io.dmem.req.payload.cmd   := Mux(io.core.req.valid, io.core.req.payload.uop.mem_cmd, MEMOP.M_PFW.asBits.asUInt)
+    io.dmem.s1_data        := RegNext(io.core.req.payload.data) //notice this is delayed a cycle!
+    io.dmem.s1_kill        := io.core.req.payload.kill || iflb_kill // kills request sent out last cycle
+    io.dmem.req.payload.phys  := Bool(true) // we always use physical addresses here,
     // as we've already done our own translations.
 
     io.dmem.invalidate_lr  := io.core.invalidate_lr
@@ -317,36 +318,36 @@ import boom_v1.exec.BrResolutionInfo
     // was two cycles ago a store request?
     val was_store_and_not_amo = m2_req_uop.is_store &&
       !m2_req_uop.is_amo &&
-      Reg(next=Reg(next=(io.core.req.valid && io.dmem.req.ready)))
+      RegNext(RegNext(io.core.req.valid && io.dmem.req.ready))
 
     // TODO add entry valid bit?
-    val resp_tag = io.dmem.resp.bits.tag
+    val resp_tag = io.dmem.resp.payload.tag
 
     io.core.resp.valid := Mux(cache_load_ack,
-      !inflight_load_buffer(resp_tag).was_killed, // hide loads that were killed
-      Mux(was_store_and_not_amo && !io.dmem.s2_nack && !Reg(next=io.core.req.bits.kill),
+      !inflight_load_buffer(resp_tag.asUInt).was_killed, // hide loads that were killed
+      Mux(was_store_and_not_amo && !io.dmem.s2_nack && !RegNext(io.core.req.payload.kill),
         Bool(true),    // stores succeed quietly, so valid if no nack
         Bool(false)))  // filter out nacked responses
 
-    io.core.resp.bits.uop := Mux(cache_load_ack, inflight_load_buffer(resp_tag).out_uop, m2_req_uop)
+    io.core.resp.payload.uop := Mux(cache_load_ack, inflight_load_buffer(resp_tag.asUInt).out_uop, m2_req_uop)
 
     // comes out the same cycle as the resp.valid signal
     // but is a few gates slower than resp.bits.data
     // TODO change resp bundle to match the new hellacache resp bundle
-    io.core.resp.bits.data_subword := io.dmem.resp.bits.data
-    io.core.resp.bits.data         := io.dmem.resp.bits.data_word_bypass
-    io.core.resp.bits.typ          := io.dmem.resp.bits.typ
+    io.core.resp.payload.data_subword := io.dmem.resp.payload.data
+    io.core.resp.payload.data         := io.dmem.resp.payload.data_word_bypass
+    io.core.resp.payload.typ          := io.dmem.resp.payload.typ
 
     //------------------------------------------------------------
     // handle nacks from the cache (or from the IFLB or the LSU)
 
-    io.core.nack.valid     := (io.dmem.s2_nack) || Reg(next=io.core.req.bits.kill) || Reg(next=iflb_kill) ||
-      Reg(next=Reg(next=(io.core.req.valid && !(io.dmem.req.ready))))
+    io.core.nack.valid     := (io.dmem.s2_nack) || RegNext(io.core.req.payload.kill) || RegNext(iflb_kill) ||
+      RegNext(RegNext(io.core.req.valid && !(io.dmem.req.ready)))
     io.core.nack.lsu_idx   := Mux(m2_req_uop.is_load, m2_req_uop.ldq_idx, m2_req_uop.stq_idx)
     io.core.nack.isload    := m2_req_uop.is_load
     io.core.nack.cache_nack:= io.dmem.s2_nack ||
-      Reg(next=iflb_kill) ||
-      Reg(next=Reg(next= (!(io.dmem.req.ready))))
+      RegNext(iflb_kill) ||
+      RegNext(RegNext(!(io.dmem.req.ready)))
 
     //------------------------------------------------------------
     // Handle exceptions and fences
@@ -354,16 +355,16 @@ import boom_v1.exec.BrResolutionInfo
 
     // we handle all of the memory exceptions (unaligned and faulting) in the LSU
     assert (!(io.core.resp.valid && RegNext(io.dmem.xcpt.ma.ld) &&
-      io.dmem.resp.bits.tag === RegNext(RegNext(io.dmem.req.bits.tag))),
+      io.dmem.resp.payload.tag === RegNext(RegNext(io.dmem.req.payload.tag))),
       "Data cache returned an misaligned load exception, which BOOM handles elsewhere.")
     assert (!(io.core.resp.valid && RegNext(io.dmem.xcpt.ma.st) &&
-      io.dmem.resp.bits.tag === RegNext(RegNext(io.dmem.req.bits.tag))),
+      io.dmem.resp.payload.tag === RegNext(RegNext(io.dmem.req.payload.tag))),
       "Data cache returned an misaligned store exception, which BOOM handles elsewhere.")
     assert (!(io.core.resp.valid && RegNext(io.dmem.xcpt.pf.ld) &&
-      io.dmem.resp.bits.tag === RegNext(RegNext(io.dmem.req.bits.tag))),
+      io.dmem.resp.payload.tag === RegNext(RegNext(io.dmem.req.payload.tag))),
       "Data cache returned an faulting load exception, which BOOM handles elsewhere.")
     assert (!(io.core.resp.valid && RegNext(io.dmem.xcpt.pf.st) &&
-      io.dmem.resp.bits.tag === RegNext(RegNext(io.dmem.req.bits.tag))),
+      io.dmem.resp.payload.tag === RegNext(RegNext(io.dmem.req.payload.tag))),
       "Data cache returned an faulting store exception, which BOOM handles elsewhere.")
 
     //------------------------------------------------------------

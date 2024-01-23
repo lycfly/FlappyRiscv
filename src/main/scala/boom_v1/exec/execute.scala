@@ -6,6 +6,7 @@ import boom_v1.Utils.chiselExtract._
 import boom_v1.Utils.chiselDotDef._
 import boom_v1.exec.FPU.FPConstants
 import boom_v1.exec.FUConstants._
+import boom_v1.exec.lsu.DCMemPortIO
 import boom_v1.predictor.{BHTUpdate, BTBUpdate}
 import boom_v1.regfile.MStatus
 import boom_v1.{Causes, FUType, MicroOp, Parameters}
