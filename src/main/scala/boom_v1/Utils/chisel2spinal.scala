@@ -94,6 +94,7 @@ object chiselDotDef {
 
   implicit def chiselWidthBigInt2SpinalBitCount(a: BigInt) = new IntDotDefs(a)
 
+
   class BooleanDotDefs(a: Boolean) {
     def B = spinal.core.Bool(a)
   }

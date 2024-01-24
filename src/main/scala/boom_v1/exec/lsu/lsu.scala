@@ -45,6 +45,7 @@
 
 package boom_v1.exec.lsu
 
+import boom_v1.MEMType._
 import boom_v1.{Causes, MEMType, MicroOp, Parameters}
 import spinal.core._
 import spinal.lib._
@@ -138,6 +139,9 @@ class LoadStoreUnitIO(pl_width: Int)(implicit p: Parameters) extends Bundle()(p)
 
 class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink2.TLEdgeOut) extends Module()(p)
 {
+//   def Reg[T <: Data](next: HardType[T]) = spinal.core.RegNext(next)
+//   def Reg[T <: Data](next: HardType[T], init: HardType[T]) = spinal.core.RegNext(next = next, init = init)
+
    val io = new LoadStoreUnitIO(pl_width)
 
    val num_ld_entries = p.NUM_LSU_ENTRIES
@@ -197,7 +201,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
    clear_store := Bool(false)
 
    val live_store_mask = RegInit(U(0, num_st_entries bits))
-   var next_live_store_mask = Mux(clear_store, live_store_mask & ~(UInt(1) << stq_head),
+   var next_live_store_mask = Mux(clear_store, live_store_mask & ~(U(1) << stq_head),
                                                 live_store_mask)
 
    //-------------------------------------------------------------
@@ -557,30 +561,29 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
    // Cache Access Cycle (Mem)
    //-------------------------------------------------------------
    //-------------------------------------------------------------
-
    // search SAQ for matches
 
-   val mem_tlb_paddr    = Reg(next=exe_tlb_paddr)
-   val mem_tlb_uop      = Reg(next=exe_tlb_uop) // not valid for std_incoming!
+   val mem_tlb_paddr    = RegNext(exe_tlb_paddr)
+   val mem_tlb_uop      = RegNext(exe_tlb_uop) // not valid for std_incoming!
    mem_tlb_uop.br_mask := GetNewBrMask(io.brinfo, exe_tlb_uop)
-   val mem_tlb_miss     = Reg(next=tlb_miss, init=Bool(false))
-   val mem_tlb_uncacheable = Reg(next=tlb_addr_uncacheable, init=Bool(false))
+   val mem_tlb_miss     = RegNext(tlb_miss, init=Bool(false))
+   val mem_tlb_uncacheable = RegNext(tlb_addr_uncacheable, init=Bool(false))
    val mem_ld_used_tlb  = RegNext(will_fire_load_incoming || will_fire_load_retry)
 
    // the load address that will search the SAQ (either a fast load or a retry load)
-   val mem_ld_addr = Mux(Reg(next=will_fire_load_wakeup), Reg(next=laq_addr(exe_ld_idx_wakeup)), mem_tlb_paddr)
-   val mem_ld_uop  = Reg(next=exe_ld_uop)
+   val mem_ld_addr = Mux(RegNext(will_fire_load_wakeup), RegNext(laq_addr(exe_ld_idx_wakeup)), mem_tlb_paddr.asUInt)
+   val mem_ld_uop  = RegNext(exe_ld_uop)
    mem_ld_uop.br_mask := GetNewBrMask(io.brinfo, exe_ld_uop)
    val mem_ld_killed = Wire(Bool()) // was a load killed in execute
 
-   val mem_fired_ld = Reg(next=(will_fire_load_incoming ||
+   val mem_fired_ld = RegNext((will_fire_load_incoming ||
                                     will_fire_load_retry ||
                                     will_fire_load_wakeup))
-   val mem_fired_sta = Reg(next=(will_fire_sta_incoming || will_fire_sta_retry), init=Bool(false))
-   val mem_fired_std = Reg(next=will_fire_std_incoming, init=Bool(false))
+   val mem_fired_sta = RegNext((will_fire_sta_incoming || will_fire_sta_retry), init=Bool(false))
+   val mem_fired_std = RegNext(will_fire_std_incoming, init=Bool(false))
 
    mem_ld_killed := Bool(false)
-   when (Reg(next=
+   when (RegNext(
          (IsKilledByBranch(io.brinfo, exe_ld_uop) ||
          io.exception ||
          (tlb_addr_uncacheable && dtlb.io.req.valid))) ||
@@ -591,9 +594,9 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
 
 
    // tell the ROB to clear the busy bit on the incoming store
-   val clr_bsy_valid = Reg(init=Bool(false))
-   val clr_bsy_robidx = Reg(UInt(width=ROB_ADDR_SZ))
-   val clr_bsy_brmask = Reg(UInt(width=MAX_BR_COUNT))
+   val clr_bsy_valid = RegInit(Bool(false))
+   val clr_bsy_robidx = Reg(UInt(width=p.ROB_ADDR_SZ))
+   val clr_bsy_brmask = Reg(UInt(width=p.MAX_BR_COUNT))
 
    clr_bsy_valid := Bool(false)
    clr_bsy_robidx := mem_tlb_uop.rob_idx
@@ -614,7 +617,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
    }
    .elsewhen (mem_fired_std)
    {
-      val mem_std_uop = RegNext(io.exe_resp.bits.uop)
+      val mem_std_uop = RegNext(io.exe_resp.payload.uop)
       clr_bsy_valid := saq_val(mem_std_uop.stq_idx) &&
                               !saq_is_virtual(mem_std_uop.stq_idx) &&
                               !mem_std_uop.is_amo
@@ -635,7 +638,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
    // forwarding requires a full address check.
 
    val read_mask = GenByteMask(mem_ld_addr, mem_ld_uop.mem_typ)
-   val st_dep_mask = laq_st_dep_mask(Reg(next=exe_ld_uop.ldq_idx))
+   val st_dep_mask = laq_st_dep_mask(RegNext(exe_ld_uop.ldq_idx))
 
    // do the double-word addr match? (doesn't necessarily mean a conflict or forward)
    val dword_addr_matches = Wire(Vec(num_st_entries, Bool()))
@@ -649,7 +652,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
    force_ld_to_sleep := Bool(false)
 
    // do the load and store memory types match (aka, B == BU, H == HU, W == WU)
-   def MemTypesMatch(typ_1: UInt, typ_2: UInt) = typ_1(1,0) === typ_2(1,0)
+   def MemTypesMatch(typ_1: UInt, typ_2: UInt) = typ_1.extract(1,0) === typ_2.extract(1,0)
 
 
    // TODO totally refactor how conflict/forwarding logic is generated
@@ -663,7 +666,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
             st_dep_mask(i) &&
             saq_val(i) &&
             !saq_is_virtual(i) &&
-            (s_addr(corePAddrBits-1,3) === mem_ld_addr(corePAddrBits-1,3)))
+            (s_addr.extract(p.corePAddrBits-1,3) === mem_ld_addr.extract(p.corePAddrBits-1,3)))
       {
          dword_addr_matches(i) := Bool(true)
       }
@@ -712,7 +715,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
 
    val forwarding_age_logic = Module(new ForwardingAgeLogic(num_st_entries))
    forwarding_age_logic.io.addr_matches    := forwarding_matches.toBits()
-   forwarding_age_logic.io.youngest_st_idx := laq_uop(Reg(next=exe_ld_uop.ldq_idx)).stq_idx
+   forwarding_age_logic.io.youngest_st_idx := laq_uop(RegNext(exe_ld_uop.ldq_idx)).stq_idx
 
    when (mem_fired_ld && forwarding_age_logic.io.forwarding_val && !tlb_miss)
    {
@@ -728,14 +731,14 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
 
    val wb_forward_std_val = Reg(init = Bool(false))
    val wb_forward_std_idx = Reg(UInt())
-   val wb_uop             = Reg(next=mem_ld_uop)
+   val wb_uop             = RegNext(mem_ld_uop)
    wb_uop.br_mask        := GetNewBrMask(io.brinfo, mem_ld_uop)
 
    val ldld_addr_conflict= Wire(init = Bool(false))
 
    // Kill load request to mem if address matches (we will either sleep load, or forward data) or TLB miss.
    // Also kill load request if load address matches an older, unexecuted load.
-   io.memreq_kill     := (mem_ld_used_tlb && (mem_tlb_miss || Reg(next=pf_ld || ma_ld))) ||
+   io.memreq_kill     := (mem_ld_used_tlb && (mem_tlb_miss || RegNext(pf_ld || ma_ld))) ||
                          (mem_fired_ld && ldst_addr_conflicts.toBits =/= UInt(0)) ||
                          (mem_fired_ld && ldld_addr_conflict) ||
                          mem_ld_killed ||
@@ -937,7 +940,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
    // one exception port, but multiple causes!
    // - 1) the incoming store-address finds a faulting load (it is by definition younger)
    // - 2) the incoming load or store address is excepting. It must be older and thus takes precedent.
-   val r_xcpt_valid = Reg(init=Bool(false))
+   val r_xcpt_valid = RegInit(Bool(false))
    val r_xcpt = Reg(new Exception)
 
    val mem_xcpt_uop = Mux(mem_xcpt_valid,
@@ -1289,11 +1292,11 @@ object GenByteMask
    def apply(addr: UInt, typ: UInt): UInt =
    {
       val mask = Wire(UInt(width = 8))
-      mask := MuxCase(UInt(255,8), Array(
-                   (typ === rocket.MT_B || typ === rocket.MT_BU) -> (UInt(1, 8) << addr(2,0)),
-                   (typ === rocket.MT_H || typ === rocket.MT_HU) -> (UInt(3, 8) << (addr(2,1) << UInt(1))),
-                   (typ === rocket.MT_W || typ === rocket.MT_WU) -> Mux(addr(2), UInt(240, 8), UInt(15, 8)),
-                   (typ === rocket.MT_D)                  -> UInt(255, 8)))
+      mask := MuxCase(U(255,8 bits), Array(
+                   (typ === MT_B.toU() || typ === MT_BU.toU()) -> (U(1, 8 bits) << addr.extract(2,0)),
+                   (typ === MT_H.toU() || typ === MT_HU.toU()) -> (U(3, 8 bits) << (addr.extract(2,1) << U(1))),
+                   (typ === MT_W.toU() || typ === MT_WU.toU()) -> Mux(addr(2), U(240, 8 bits), U(15, 8 bits)),
+                   (typ === MT_D.toU())                  -> U(255, 8 bits)))
       mask
    }
 }
