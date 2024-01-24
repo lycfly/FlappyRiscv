@@ -45,7 +45,7 @@
 
 package boom_v1.exec.lsu
 
-import boom_v1.{MEMType, MicroOp, Parameters}
+import boom_v1.{Causes, MEMType, MicroOp, Parameters}
 import spinal.core._
 import spinal.lib._
 import boom_v1.Utils._
@@ -360,7 +360,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
 
    val exe_vaddr   = Mux(will_fire_sta_retry,  saq_addr(stq_retry_idx),
                      Mux(will_fire_load_retry, laq_addr(laq_retry_idx),
-                                               io.exe_resp.payload.addr.asBits))
+                                               io.exe_resp.payload.addr))
 
    val dtlb = (new TLB(p.nTLBEntries))
    io.counters.tlb_miss := dtlb.io.miss
@@ -369,28 +369,28 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
                         will_fire_sta_incoming ||
                         will_fire_sta_retry ||
                         will_fire_load_retry
-   dtlb.io.req.bits.passthrough := Bool(false) // lets status.vm decide
-   dtlb.io.req.bits.vpn := exe_vaddr >> UInt(corePgIdxBits)
-   dtlb.io.req.bits.instruction := Bool(false)
-   dtlb.io.req.bits.store := will_fire_sta_incoming || will_fire_sta_retry
+   dtlb.io.req.payload.passthrough := Bool(false) // lets status.vm decide
+   dtlb.io.req.payload.vpn := exe_vaddr >> p.corePgIdxBits
+   dtlb.io.req.payload.instruction := Bool(false)
+   dtlb.io.req.payload.store := will_fire_sta_incoming || will_fire_sta_retry
 
    // exceptions
-   val ma_ld = io.exe_resp.valid && io.exe_resp.bits.mxcpt.valid && exe_tlb_uop.is_load
+   val ma_ld = io.exe_resp.valid && io.exe_resp.payload.mxcpt.valid && exe_tlb_uop.is_load
    val pf_ld = dtlb.io.req.valid && dtlb.io.resp.xcpt_ld && exe_tlb_uop.is_load
    val pf_st = dtlb.io.req.valid && dtlb.io.resp.xcpt_st && exe_tlb_uop.is_store
-   val mem_xcpt_valid = Reg(next=((dtlb.io.req.valid && (pf_ld || pf_st)) ||
-                                 (io.exe_resp.valid && io.exe_resp.bits.mxcpt.valid)) &&
+   val mem_xcpt_valid = RegNext(((dtlb.io.req.valid && (pf_ld || pf_st)) ||
+                                 (io.exe_resp.valid && io.exe_resp.payload.mxcpt.valid)) &&
                                  !io.exception &&
                                  !IsKilledByBranch(io.brinfo, exe_tlb_uop),
                             init=Bool(false))
-   val mem_xcpt_cause = Reg(next=(Mux(io.exe_resp.valid &&
-                                      io.exe_resp.bits.mxcpt.valid, io.exe_resp.bits.mxcpt.bits,
-                                  Mux(exe_tlb_uop.is_load,         UInt(rocket.Causes.fault_load),
-                                                                   UInt(rocket.Causes.fault_store)))))
+   val mem_xcpt_cause = RegNext((Mux(io.exe_resp.valid &&
+                                      io.exe_resp.payload.mxcpt.valid, io.exe_resp.payload.mxcpt.payload,
+                                  Mux(exe_tlb_uop.is_load,         U(Causes.fault_load),
+                                                                   U(Causes.fault_store)))))
 
    assert (!(dtlb.io.req.valid && exe_tlb_uop.is_fence), "Fence is pretending to talk to the TLB")
-   assert (!(io.exe_resp.bits.mxcpt.valid && io.exe_resp.valid &&
-            !(io.exe_resp.bits.uop.ctrl.is_load || io.exe_resp.bits.uop.ctrl.is_sta))
+   assert (!(io.exe_resp.payload.mxcpt.valid && io.exe_resp.valid &&
+            !(io.exe_resp.payload.uop.ctrl.is_load || io.exe_resp.payload.uop.ctrl.is_sta))
             , "A uop that's not a load or store-address is throwing a memory exception.")
 
    val tlb_miss = dtlb.io.req.valid && (dtlb.io.resp.miss || !dtlb.io.req.ready)
@@ -398,7 +398,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
 
 
    // output
-   val exe_tlb_paddr = Cat(dtlb.io.resp.ppn, exe_vaddr(corePgIdxBits-1,0))
+   val exe_tlb_paddr = Cat(dtlb.io.resp.ppn, exe_vaddr.extract(p.corePgIdxBits-1,0))
 
    // check if a load is uncacheable - must stop it from executing speculatively,
    // as it might have side-effects!
@@ -435,7 +435,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
          laq_is_virtual(laq_retry_idx) &&
          !laq_executed (laq_retry_idx) && // perf lose, but simplifies control
          !laq_failure  (laq_retry_idx) &&
-         Reg(next=dtlb.io.req.ready))
+         RegNext(dtlb.io.req.ready))
    {
       can_fire_load_retry := Bool(true)
    }
@@ -461,7 +461,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
    when (stq_entry_val (stq_retry_idx) &&
          saq_val       (stq_retry_idx) &&
          saq_is_virtual(stq_retry_idx) &&
-         Reg(next=dtlb.io.req.ready))
+         RegNext(dtlb.io.req.ready))
    {
       can_fire_sta_retry := Bool(true)
    }
@@ -491,7 +491,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
    io.memreq_wdata   := sdq_data(stq_execute_head)
    io.memreq_uop     := exe_ld_uop
 
-   val mem_fired_st = Reg(init = Bool(false))
+   val mem_fired_st = RegInit(Bool(false))
    mem_fired_st := Bool(false)
    when (will_fire_store_commit)
    {
@@ -518,7 +518,7 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
                                           (will_fire_load_retry && pf_ld)
    }
 
-   assert (PopCount(Vec(will_fire_store_commit, will_fire_load_incoming, will_fire_load_retry, will_fire_load_wakeup))
+   assert (CountOne(Vec(will_fire_store_commit, will_fire_load_incoming, will_fire_load_retry, will_fire_load_wakeup))
       <= UInt(1), "Multiple requestors firing to the data cache.")
 
 
@@ -547,8 +547,8 @@ class LoadStoreUnit(pl_width: Int)(implicit p: Parameters, edge: uncore.tilelink
 
    when (will_fire_std_incoming)
    {
-      sdq_val (io.exe_resp.bits.uop.stq_idx) := Bool(true)
-      sdq_data(io.exe_resp.bits.uop.stq_idx) := io.exe_resp.bits.data.toBits
+      sdq_val (io.exe_resp.payload.uop.stq_idx) := Bool(true)
+      sdq_data(io.exe_resp.payload.uop.stq_idx) := io.exe_resp.payload.data.asBits
    }
 
 

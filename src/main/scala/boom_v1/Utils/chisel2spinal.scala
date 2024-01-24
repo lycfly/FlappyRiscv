@@ -3,7 +3,9 @@ package boom_v1.Utils
 import spinal.core.internals.UIntRangedAccessFixed
 import spinal.core.{Bundle, Cat, Data, HardType, IntToBuilder, RegNext, RegNextWhen}
 import spinal.lib.Flow
-
+object log2Ceil {
+  def apply(x: Int) = spinal.core.log2Up(x)
+}
 object Wire {
   def apply[T <: Data](init: HardType[T]) = init()
 }

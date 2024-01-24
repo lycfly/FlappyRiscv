@@ -323,3 +323,14 @@ object ImmGen
 // store the rounding-mode and func type for FP in the packed immediate as well
 object ImmGenRm { def apply(ip: UInt): UInt = { return ip(2 downto 0) }}
 object ImmGenTyp { def apply(ip: UInt): UInt = { return ip(9 downto 8) }} // only works if !(IS_B or IS_S)
+object AgePriorityEncoder
+{
+  def apply(in: Seq[Bool], head: UInt): UInt =
+  {
+    val n = in.size
+    require (isPow2(n))
+    val temp_vec = (0 until n).map(i => in(i) && UInt(i) >= head) ++ in
+    val idx = PriorityEncoder(temp_vec)
+    idx(log2Up(n)-1 downto 0) //discard msb
+  }
+}

@@ -32,16 +32,16 @@ class TLBResp(implicit p: Parameters) extends Bundle {
   val cacheable = Bool(OUTPUT)
 }
 
-class TLB(entries: Int)(implicit edge: TLEdgeOut, p: Parameters) extends CoreModule()(p) {
+class TLB(entries: Int)(implicit edge: TLEdgeOut, p: Parameters) extends Module {
   val io = new Bundle {
-    val req = Decoupled(new TLBReq).flip
+    val req = slave Stream(new TLBReq)
     val resp = new TLBResp
     val ptw = new TLBPTWIO
     val miss = Bool(OUTPUT)
   }
-  val cacheBlockBytes = p(CacheBlockBytes)
+  val cacheBlockBytes = p.CacheBlockBytes
   val camAddrBits = log2Ceil(entries)
-  val camTagBits = asIdBits + vpnBits
+  val camTagBits = p.ASIdBits + p.vpnBits
 
   val valid = Reg(init = UInt(0, entries))
   val ppns = Reg(Vec(entries, UInt(width = ppnBits)))
