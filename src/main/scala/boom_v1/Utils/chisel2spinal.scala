@@ -60,7 +60,10 @@ object UInt {
       spinal.core.UInt().setWidth(width).asOutput()
     }
   }
+  def apply(data: Int, width: Int) = {
+    spinal.core.U(data, width bits)
 
+  }
   def apply(width: Int) = {
     spinal.core.UInt().setWidth(width)
   }
@@ -93,7 +96,13 @@ object chiselDotDef {
   implicit def chiselWidth2SpinalBitCount(a: Int) = new IntDotDefs(BigInt(a))
 
   implicit def chiselWidthBigInt2SpinalBitCount(a: BigInt) = new IntDotDefs(a)
+//  implicit def chiselVectabulate(n: Int) = new vec_scala(n)
 
+//  class vec_scala(n: Int){
+//    def tabulate[T <: spinal.core.Data](n: Int)(gen: (Int) => T) = {
+//      spinal.core.Vec((0 until n).map(i => gen(i)))
+//    }
+//  }
 
   class BooleanDotDefs(a: Boolean) {
     def B = spinal.core.Bool(a)

@@ -25,7 +25,7 @@ class TLBReq(implicit p: Parameters) extends Bundle {
 class TLBResp(implicit p: Parameters) extends Bundle {
   // lookup responses
   val miss = Bool(OUTPUT)
-  val ppn = UInt(OUTPUT, ppnBits)
+  val ppn = UInt(OUTPUT, p.ppnBits)
   val xcpt_ld = Bool(OUTPUT)
   val xcpt_st = Bool(OUTPUT)
   val xcpt_if = Bool(OUTPUT)
