@@ -9,7 +9,55 @@ import spinal.core.sim._
 import spinal.lib._
 
 import scala.math.log
+object Counter {
 
+  /** Instantiate a [[Counter! counter]] with the specified number of counts.
+   */
+  def apply(n: Int): Counter = new Counter(start = 0, end = if(n>0) n-1 else 0)
+
+  /** Instantiate a [[Counter! counter]] with the specified number of counts and a gate.
+   *
+   * @param cond condition that controls whether the counter increments this cycle
+   * @param n number of counts before the counter resets
+   * @return tuple of the counter value and whether the counter will wrap (the value is at
+   * maximum and the condition is true).
+   */
+  def apply(cond: Bool, n: Int): (UInt, Bool) = {
+    val c = new Counter(start = 0, end = if(n>0) n-1 else 0)
+    val wrap = False
+    when(cond) {
+      c.increment()
+      wrap := c.willOverflow
+    }
+    (c.value, wrap)
+  }
+
+  /** Creates a counter that steps through a specified range of values.
+   *
+   * @param r the range of counter values
+   * @param enable controls whether the counter increments this cycle
+   * @param reset resets the counter to its initial value during this cycle
+   * @return tuple of the counter value and whether the counter will wrap (the value is at
+   * maximum and the condition is true).
+   */
+  def apply(r: Range, enable: Bool = True, reset: Bool = False): (UInt, Bool) = {
+    val c = new Counter(start = r.start, end = r.end)
+    val wrap = False
+
+    when(reset) {
+      c.clear()
+    }.elsewhen(enable) {
+      c.increment()
+      wrap := c.willOverflow
+    }
+
+    (c.value, wrap)
+  }
+}
+object log2Floor {
+  def apply(in: BigInt): Int = log2Up(in) - (if (isPow2(in)) 0 else 1)
+  def apply(in: Int):    Int = apply(BigInt(in))
+}
 class Field[T]
 
 object MuxT {

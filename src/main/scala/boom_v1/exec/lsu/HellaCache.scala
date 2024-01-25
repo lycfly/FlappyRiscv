@@ -10,7 +10,7 @@ import spinal.lib._
 import boom_v1.Utils._
 import boom_v1.Utils.chiselExtract._
 import boom_v1.Utils.chiselDotDef._
-
+import boom_v1.uncore.Code
 import scala.collection.mutable.ListBuffer
 
 case class DCacheParams(
